@@ -63,3 +63,11 @@ export {
 export { default as ResourceCounter } from './components/player/ResourceCounter.vue';
 export { default as TrackMeter } from './components/player/TrackMeter.vue';
 export { default as SlotArea } from './components/player/SlotArea.vue';
+
+// Tile types and utilities
+export type { TileShape, TileRotation, PlacedTile, TileLayer } from '../types/index.js';
+export {
+  defineTileShape, rotateTileOffsets, getCellKey,
+  createTileLayer, canPlaceTile, placeTile, getTileAt, getTileCells,
+  STANDARD_TILE_SHAPES,
+} from '../utils/tile-utils.js';
