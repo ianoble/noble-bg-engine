@@ -1,0 +1,35 @@
+---
+description: Use Tailwind CSS utility classes for all styling instead of custom CSS
+globs: "**/*.vue"
+alwaysApply: false
+---
+
+# Tailwind CSS Styling
+
+Use Tailwind CSS utility classes for all styling. Avoid writing custom CSS or `<style>` blocks.
+
+- Prefer Tailwind utility classes directly in templates over `<style scoped>` blocks.
+- Use Tailwind's design tokens (spacing, colors, typography) for visual consistency.
+- When a combination of utilities is reused, extract it with `@apply` in a shared CSS layer or create a component.
+- Never use inline `style` attributes for layout, spacing, or colors.
+
+```vue
+<!-- ❌ BAD -->
+<template>
+  <div style="padding: 16px; background: #1a1d27;">
+    <button class="custom-btn">Click</button>
+  </div>
+</template>
+<style scoped>
+.custom-btn { padding: 8px 16px; border-radius: 8px; background: #6366f1; color: white; }
+</style>
+
+<!-- ✅ GOOD -->
+<template>
+  <div class="p-4 bg-gray-900">
+    <button class="px-4 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-400 transition-colors">
+      Click
+    </button>
+  </div>
+</template>
+```

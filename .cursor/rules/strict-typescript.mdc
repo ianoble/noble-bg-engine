@@ -1,0 +1,28 @@
+---
+description: Strictly type all game state and avoid any in TypeScript
+globs: "**/*.{ts,vue}"
+alwaysApply: false
+---
+
+# Strict TypeScript Types
+
+All game state, moves, and context must have explicit TypeScript types. Never use `any`.
+
+- Define interfaces/types for every game state shape in `packages/shared/src/types.ts`.
+- Use the shared types in both server and client code.
+- Prefer `unknown` over `any` when the type is truly not known, then narrow with type guards.
+- Generic components should use typed generics (`GameContext<S>`) rather than `any`.
+
+```typescript
+// ❌ BAD
+function handleState(state: any) {
+  const cells = state.G.cells;
+}
+
+// ✅ GOOD
+import type { TicTacToeState } from '@noble/bg-engine';
+
+function handleState(state: { G: TicTacToeState; ctx: Ctx }) {
+  const cells: CellValue[] = state.G.cells;
+}
+```

@@ -1,0 +1,34 @@
+---
+description: Keep all game logic in the engine package for server-side validation
+alwaysApply: true
+---
+
+# Game Logic in Engine Package
+
+All game rules, move validation, and win/draw detection must live in `packages/engine/`.
+
+- The boardgame.io `Game` object (setup, moves, endIf, turn config) belongs in `packages/engine/src/games/<game-name>/`.
+- The server and client both import from `@noble/bg-engine` — never duplicate logic.
+- Client-side code should only handle presentation and dispatching moves, not validation.
+- All game state interfaces must extend `BaseGameState` from `types/framework.ts`.
+- Use `defineGame<S>()` to create game definitions with compile-time type safety.
+- When adding a new game, create a directory under `engine/src/games/<game-name>/` with `types.ts`, `game.ts`, and `index.ts`, then register it in `engine/src/games/registry.ts`.
+
+```
+packages/engine/src/
+  types/
+    framework.ts    ← BaseGameState, GameDefinition, defineGame, GameContext
+    index.ts        ← barrel
+  games/
+    tic-tac-toe/
+      types.ts      ← CellValue, TicTacToeState extends BaseGameState
+      game.ts       ← boardgame.io Game<TicTacToeState>
+      index.ts      ← defineGame<TicTacToeState>(...)
+    registry.ts     ← gameRegistry[], gameMap{}
+  client/           ← Vue composables, components, stores
+  styles/           ← core CSS
+  index.ts          ← barrel export
+
+packages/server/    ← imports @noble/bg-engine, never defines game rules
+packages/client/    ← imports @noble/bg-engine + @noble/bg-engine/client, never validates moves
+```

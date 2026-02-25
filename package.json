@@ -1,0 +1,27 @@
+{
+	"name": "board-game-framework",
+	"bin": {
+		"create-noble-game": "./bin/create-noble-game.js"
+	},
+	"version": "0.1.0",
+	"private": true,
+	"workspaces": [
+		"packages/engine",
+		"packages/server",
+		"packages/client"
+	],
+	"scripts": {
+		"dev": "npm run build:engine && concurrently -n server,client -c blue,green \"npm run dev:server\" \"npm run dev:client\"",
+		"dev:server": "npm run dev -w packages/server",
+		"dev:client": "npm run dev -w packages/client",
+		"build": "npm run build:engine && npm run build -w packages/server && npm run build -w packages/client",
+		"build:engine": "npm run build -w packages/engine"
+	},
+	"devDependencies": {
+		"concurrently": "^9.1.0",
+		"typescript": "^5.7.0"
+	},
+	"dependencies": {
+		"fs-extra": "^11.3.3"
+	}
+}

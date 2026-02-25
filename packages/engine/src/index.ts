@@ -1,0 +1,26 @@
+export type { BaseGameState, GameDefinition, GameContext, MoveValidationContext, LogEntry } from './types/index.js';
+export type { VisibleCard, HiddenCard, Card } from './types/index.js';
+export { defineGame, isCardHidden, redactCards } from './types/index.js';
+export { createStandardDeck, shuffle } from './utils/deck-utils.js';
+export type { StandardCard, Suit, Rank } from './utils/deck-utils.js';
+export type { GamePiece, BoardCell, SquareBoard, HexCoord, HexBoard, Board } from './types/index.js';
+export {
+  createSquareBoard, getSquareCell, squareNeighbors, placePiece, removePiece, flipCell, findPieces,
+  hexKey, parseHexKey, createHexBoard, getHexCell, hexNeighbors, placePieceHex, removePieceHex, flipHexCell, findPiecesHex,
+} from './utils/board-utils.js';
+export type { ResourcePool, Track, Slot } from './types/index.js';
+export {
+  createResourcePool, addResource, removeResource, getResource, hasResource,
+  createTrack, advanceTrack, setTrack,
+  createSlot, addToSlot, removeFromSlot, isSlotFull,
+} from './utils/player-board-utils.js';
+export type { TileShape, TileRotation, PlacedTile, TileLayer } from './types/index.js';
+export {
+  defineTileShape, rotateTileOffsets, getCellKey,
+  createTileLayer, canPlaceTile, placeTile, getTileAt, getTileCells,
+  STANDARD_TILE_SHAPES,
+} from './utils/tile-utils.js';
+export { prepareGame } from './prepare.js';
+export { gameRegistry, gameMap, registerGame } from './games/registry.js';
+export type { TicTacToeState, CellValue } from './games/tic-tac-toe/index.js';
+export { ticTacToeDef } from './games/tic-tac-toe/index.js';

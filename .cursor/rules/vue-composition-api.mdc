@@ -1,0 +1,33 @@
+---
+description: Enforce Vue 3 Composition API with script setup in all Vue components
+globs: "**/*.vue"
+alwaysApply: false
+---
+
+# Vue 3 Composition API
+
+All Vue components must use the Composition API with `<script setup lang="ts">`.
+
+- Never use the Options API (`data`, `methods`, `computed` properties as options, etc.).
+- Never use `defineComponent()` — use `<script setup>` instead.
+- Use `defineProps`, `defineEmits`, and `defineExpose` compiler macros directly.
+- Extract reusable logic into composables (`use*.ts` files).
+
+```vue
+<!-- ❌ BAD -->
+<script lang="ts">
+import { defineComponent } from 'vue';
+export default defineComponent({
+  data() { return { count: 0 }; },
+  methods: { increment() { this.count++; } },
+});
+</script>
+
+<!-- ✅ GOOD -->
+<script setup lang="ts">
+import { ref } from 'vue';
+
+const count = ref(0);
+function increment() { count.value++; }
+</script>
+```

@@ -1,0 +1,41 @@
+{
+  "name": "@noble/bg-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./src/client/index.ts",
+      "import": "./src/client/index.ts"
+    },
+    "./styles": "./src/styles/core.css"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "boardgame.io": "^0.50.2",
+    "nanoid": "^5.1.6"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0",
+    "pinia": "^2.3.0",
+    "lucide-vue-next": "^0.575.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": { "optional": true },
+    "pinia": { "optional": true },
+    "lucide-vue-next": { "optional": true }
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
