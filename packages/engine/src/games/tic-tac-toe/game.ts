@@ -1,6 +1,7 @@
 import type { Game, Ctx } from 'boardgame.io';
 import type { TicTacToeState } from './types.js';
-import { INVALID_MOVE } from 'boardgame.io/core';
+
+const INVALID_MOVE = 'INVALID_MOVE';
 
 function checkWinner(cells: (string | null)[]): string | null {
   const lines = [

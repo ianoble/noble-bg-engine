@@ -2,6 +2,13 @@ export type { BaseGameState, GameDefinition, GameContext, MoveValidationContext,
 export type { VisibleCard, HiddenCard, Card } from './types/index.js';
 export { defineGame, isCardHidden, redactCards } from './types/index.js';
 export { createStandardDeck, shuffle } from './utils/deck-utils.js';
+
+// Re-export boardgame.io types/values so game-logic files can import from
+// @noble/bg-engine (server-compatible) rather than @noble/bg-engine/client.
+export type { Game, Ctx } from 'boardgame.io';
+// Defined locally to avoid `boardgame.io/core` directory import which breaks
+// Node.js ESM resolution (boardgame.io lacks a proper exports map for /core).
+export const INVALID_MOVE = 'INVALID_MOVE';
 export type { StandardCard, Suit, Rank } from './utils/deck-utils.js';
 export type { GamePiece, BoardCell, SquareBoard, HexCoord, HexBoard, Board } from './types/index.js';
 export {

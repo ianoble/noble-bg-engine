@@ -4,15 +4,16 @@
   "private": true,
   "main": "./dist/index.cjs",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs --external:node-persist --external:@noble/bg-engine",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs --external:node-persist --external:@noble/bg-engine --external:bgio-postgres --external:sequelize --external:pg --external:pg-hstore",
     "dev": "npm run build && node --watch-path=dist dist/index.cjs",
     "start": "node dist/index.cjs"
   },
   "dependencies": {
+    "@koa/cors": "^5.0.0",
     "@noble/bg-engine": "*",
+    "bgio-postgres": "^1.0.15",
     "boardgame.io": "^0.50.2",
-    "koa": "^2.15.0",
-    "@koa/cors": "^5.0.0"
+    "koa": "^2.15.0"
   },
   "devDependencies": {
     "@types/koa": "^2.15.0",

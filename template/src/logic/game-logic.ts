@@ -21,7 +21,7 @@ import {
 	type ResourcePool,
 	type Track,
 	type Slot,
-} from '@noble/bg-engine/client';
+} from '@noble/bg-engine';
 
 // ---------------------------------------------------------------------------
 // State

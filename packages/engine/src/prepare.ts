@@ -1,6 +1,7 @@
 import type { Game } from 'boardgame.io';
-import { INVALID_MOVE } from 'boardgame.io/core';
 import type { GameDefinition, BaseGameState, LogEntry } from './types/index.js';
+
+const INVALID_MOVE = 'INVALID_MOVE';
 
 /**
  * Prepare a {@link GameDefinition} for registration with boardgame.io's

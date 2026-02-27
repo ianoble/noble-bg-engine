@@ -26,7 +26,7 @@ export { createStandardDeck, shuffle } from '../utils/deck-utils.js';
 export type { StandardCard, Suit, Rank } from '../utils/deck-utils.js';
 
 // Store
-export { useGameStore, setServerUrl } from './stores/game.js';
+export { useGameStore, setServerUrl, setDebug } from './stores/game.js';
 
 // Utilities
 export { saveSession, loadSession, clearSession } from './utils/session.js';

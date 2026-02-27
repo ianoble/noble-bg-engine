@@ -5,9 +5,14 @@ import { SocketIO } from 'boardgame.io/multiplayer';
 import { gameMap } from '../../games/registry.js';
 
 let _serverUrl = '';
+let _debug = false;
 
 export function setServerUrl(url: string) {
   _serverUrl = url;
+}
+
+export function setDebug(enabled: boolean) {
+  _debug = enabled;
 }
 
 export const useGameStore = defineStore('game', () => {
@@ -61,6 +66,7 @@ export const useGameStore = defineStore('game', () => {
 
     bgioClient = Client({
       game: def.game,
+      debug: _debug,
       ...(_serverUrl ? { multiplayer: SocketIO({ server: _serverUrl }) } : {}),
       matchID: mID,
       playerID: pID,
