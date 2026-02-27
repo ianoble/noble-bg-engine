@@ -6,6 +6,9 @@ import {
   findSessionsByPlayer,
   upsertSession,
   deleteSession,
+  upsertAbandonVote,
+  getAbandonVoteStatus,
+  deleteAbandonVote,
 } from './db.js';
 import { generateToken, resolveToken, extractBearerToken } from './tokens.js';
 
@@ -157,6 +160,52 @@ export function createAuthRoutes(hasDb: boolean, allowedOrigins: (string | RegEx
 
         const [, gameName, matchID] = deleteMatch;
         await deleteSession(playerId, decodeURIComponent(gameName), decodeURIComponent(matchID));
+        ctx.status = 200;
+        ctx.body = { ok: true };
+        return;
+      }
+
+      if (ctx.path === '/auth/vote-abandon' && ctx.method === 'POST') {
+        const playerId = requireAuth(ctx);
+        if (!playerId) return;
+
+        const body = await parseJsonBody(ctx);
+        const { gameName, matchID } = body;
+
+        if (!gameName || !matchID) {
+          ctx.status = 400;
+          ctx.body = { error: 'gameName and matchID are required' };
+          return;
+        }
+
+        await upsertAbandonVote(playerId, gameName, matchID);
+        const status = await getAbandonVoteStatus(gameName, matchID);
+        ctx.status = 200;
+        ctx.body = status;
+        return;
+      }
+
+      const voteAbandonMatch = ctx.path.match(/^\/auth\/vote-abandon\/([^/]+)\/([^/]+)$/);
+      if (voteAbandonMatch && ctx.method === 'GET') {
+        const playerId = requireAuth(ctx);
+        if (!playerId) return;
+
+        const [, gameName, matchID] = voteAbandonMatch;
+        const status = await getAbandonVoteStatus(
+          decodeURIComponent(gameName),
+          decodeURIComponent(matchID),
+        );
+        ctx.status = 200;
+        ctx.body = status;
+        return;
+      }
+
+      if (voteAbandonMatch && ctx.method === 'DELETE') {
+        const playerId = requireAuth(ctx);
+        if (!playerId) return;
+
+        const [, gameName, matchID] = voteAbandonMatch;
+        await deleteAbandonVote(playerId, decodeURIComponent(gameName), decodeURIComponent(matchID));
         ctx.status = 200;
         ctx.body = { ok: true };
         return;

@@ -39,6 +39,16 @@ export async function initAuthTables(): Promise<void> {
       UNIQUE(player_id, game_name, match_id)
     )
   `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS abandon_votes (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      game_name TEXT NOT NULL,
+      match_id TEXT NOT NULL,
+      player_id UUID NOT NULL REFERENCES player_accounts(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      UNIQUE(game_name, match_id, player_id)
+    )
+  `);
 }
 
 export interface PlayerAccount {
@@ -111,6 +121,72 @@ export async function deleteSession(
   const p = getPool();
   await p.query(
     'DELETE FROM player_sessions WHERE player_id = $1 AND game_name = $2 AND match_id = $3',
+    [playerId, gameName, matchID],
+  );
+  await p.query(
+    'DELETE FROM abandon_votes WHERE player_id = $1 AND game_name = $2 AND match_id = $3',
+    [playerId, gameName, matchID],
+  );
+}
+
+export async function upsertAbandonVote(
+  playerId: string,
+  gameName: string,
+  matchID: string,
+): Promise<void> {
+  const p = getPool();
+  await p.query(
+    `INSERT INTO abandon_votes (game_name, match_id, player_id)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (game_name, match_id, player_id) DO NOTHING`,
+    [gameName, matchID, playerId],
+  );
+}
+
+export interface AbandonVoteStatus {
+  voters: string[];
+  totalHumans: number;
+  allAgreed: boolean;
+}
+
+export async function getAbandonVoteStatus(
+  gameName: string,
+  matchID: string,
+): Promise<AbandonVoteStatus> {
+  const p = getPool();
+  const votersResult = await p.query(
+    `SELECT pa.name
+     FROM abandon_votes av
+     JOIN player_accounts pa ON pa.id = av.player_id
+     WHERE av.game_name = $1 AND av.match_id = $2
+     ORDER BY av.created_at`,
+    [gameName, matchID],
+  );
+  const voters = votersResult.rows.map((r: any) => r.name);
+
+  const humansResult = await p.query(
+    `SELECT COUNT(DISTINCT player_id) AS total
+     FROM player_sessions
+     WHERE game_name = $1 AND match_id = $2`,
+    [gameName, matchID],
+  );
+  const totalHumans = parseInt(humansResult.rows[0]?.total ?? '0', 10);
+
+  return {
+    voters,
+    totalHumans,
+    allAgreed: totalHumans > 0 && voters.length >= totalHumans,
+  };
+}
+
+export async function deleteAbandonVote(
+  playerId: string,
+  gameName: string,
+  matchID: string,
+): Promise<void> {
+  const p = getPool();
+  await p.query(
+    'DELETE FROM abandon_votes WHERE player_id = $1 AND game_name = $2 AND match_id = $3',
     [playerId, gameName, matchID],
   );
 }
