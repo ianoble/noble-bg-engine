@@ -2,7 +2,7 @@ services:
   - type: web
     name: noble-bg-server
     runtime: node
-    buildCommand: npm install && npm run build -w packages/engine && npm run build -w packages/server
+    buildCommand: npm install --include=dev && npm run build -w packages/engine && npm run build -w packages/server
     startCommand: node packages/server/dist/index.cjs
     envVars:
       - key: NODE_ENV
