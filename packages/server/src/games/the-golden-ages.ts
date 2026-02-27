@@ -42,6 +42,9 @@ export type GamePhase = 'eraStart' | 'tilePlacement' | 'actions';
 
 export type ResourceType = 'gem' | 'rock' | 'game' | 'wheat';
 
+export type EdgeType = 'water' | 'land';
+export type CellEdges = [EdgeType, EdgeType, EdgeType, EdgeType]; // [top, right, bottom, left]
+
 export type ActionType =
 	| 'explorer'
 	| 'builder'
@@ -356,6 +359,7 @@ export interface GoldenAgesState extends BaseGameState {
 	eraJudgementCard: GameCard | null;
 	eraIVRemainingTurns: number;
 	endGameScored: boolean;
+	boardEdges: Record<string, CellEdges>;
 }
 
 // ---------------------------------------------------------------------------
@@ -399,31 +403,37 @@ export const ROTATIONS: TileRotation[] = [0, 90, 180, 270];
 
 const ERAS: Era[] = ['I', 'II', 'III', 'IV'];
 
+const L: EdgeType = 'land';
+const W: EdgeType = 'water';
+
 export interface TileTemplate {
 	id: number;
 	resources: ResourceType[][];
+	edges: CellEdges[];
 }
 
+const ALL_LAND: CellEdges = [L, L, L, L];
+
 export const L_TILE_TEMPLATES: TileTemplate[] = [
-	{ id: 1, resources: [['wheat'], ['wheat'], ['rock']] },
-	{ id: 2, resources: [['wheat'], ['game'], ['rock']] },
-	{ id: 3, resources: [['wheat'], ['rock'], ['rock']] },
-	{ id: 4, resources: [['rock'], ['game'], ['wheat']] },
+	{ id: 1, resources: [['wheat'], ['wheat'], ['rock']], edges: [[W,W,L,W], [L,L,W,W], [L,L,W,L]] },
+	{ id: 2, resources: [['wheat'], ['game'], ['rock']], edges: [[L,L,L,L], [L,L,W,L], [L,W,W,L]] },
+	{ id: 3, resources: [['wheat'], ['rock'], ['rock']], edges: [[L,L,L,L], [L,L,W,W], [L,W,W,L]] },
+	{ id: 4, resources: [['rock'], ['game'], ['wheat']], edges: [[W,W,L,W], [L,L,L,W], [W,W,L,L]] },
 ];
 
 export const DOMINO_TILE_TEMPLATES: TileTemplate[] = [
-	{ id: 5, resources: [['gem'], ['rock']] },
-	{ id: 6, resources: [['game'], ['gem']] },
-	{ id: 7, resources: [['rock'], ['gem']] },
-	{ id: 8, resources: [['wheat'], ['gem']] },
-	{ id: 9, resources: [['game', 'game'], ['gem']] },
-	{ id: 10, resources: [['gem'], ['wheat']] },
-	{ id: 11, resources: [['gem'], ['wheat']] },
-	{ id: 12, resources: [['rock'], ['rock']] },
-	{ id: 13, resources: [['rock'], ['gem']] },
-	{ id: 14, resources: [['game', 'game'], ['gem']] },
-	{ id: 15, resources: [['gem'], ['game']] },
-	{ id: 16, resources: [['wheat'], ['wheat']] },
+	{ id: 5, resources: [['gem'], ['rock']], edges: [[L,L,L,L], [L,W,W,L]] },
+	{ id: 6, resources: [['game'], ['gem']], edges: [[W,L,L,L], [W,W,L,L]] },
+	{ id: 7, resources: [['rock'], ['gem']], edges: [[W,L,L,W], [W,W,L,L]] },
+	{ id: 8, resources: [['wheat'], ['gem']], edges: [[W,L,W,L], [L,W,W,L]] },
+	{ id: 9, resources: [['game', 'game'], ['gem']], edges: [[L,L,W,W], [W,W,W,L]] },
+	{ id: 10, resources: [['gem'], ['wheat']], edges: [[W,L,L,L], [W,L,L,L]] },
+	{ id: 11, resources: [['gem'], ['wheat']], edges: [[L,L,W,W], [L,W,W,L]] },
+	{ id: 12, resources: [['rock'], ['rock']], edges: [ALL_LAND, ALL_LAND] }, // all land confirmed
+	{ id: 13, resources: [['rock'], ['gem']], edges: [ALL_LAND, [L,W,L,L]] },
+	{ id: 14, resources: [['game', 'game'], ['gem']], edges: [[W,L,L,W], [W,W,W,L]] },
+	{ id: 15, resources: [['gem'], ['game']], edges: [[W,L,L,W], [W,W,L,L]] },
+	{ id: 16, resources: [['wheat'], ['wheat']], edges: [[W,L,W,W], [W,W,W,L]] },
 ];
 
 export const BOARD_RESOURCES: Record<string, ResourceType[]> = {
@@ -600,6 +610,16 @@ function buildFutureTechDeck(): GameCard[] {
 
 const EDGE_NEIGHBORS: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 
+function rotateCellEdges(edges: CellEdges, rotation: TileRotation): CellEdges {
+	const [t, r, b, l] = edges;
+	switch (rotation) {
+		case 0: return [t, r, b, l];
+		case 90: return [l, t, r, b];
+		case 180: return [b, l, t, r];
+		case 270: return [r, b, l, t];
+	}
+}
+
 function hasAdjacentTile(
 	layer: TileLayer,
 	shape: TileShape,
@@ -623,7 +643,46 @@ function hasAdjacentTile(
 	return false;
 }
 
-/** Full placement check: in-bounds, no overlap, and adjacent to an existing tile. */
+// Maps neighbor direction [dr,dc] to [myEdgeIndex, theirEdgeIndex]
+const EDGE_MATCH_MAP: Record<string, [number, number]> = {
+	'-1,0': [0, 2], // neighbor above: my top vs their bottom
+	'1,0': [2, 0],  // neighbor below: my bottom vs their top
+	'0,-1': [3, 1], // neighbor left: my left vs their right
+	'0,1': [1, 3],  // neighbor right: my right vs their left
+};
+
+function edgesMatch(
+	layer: TileLayer,
+	boardEdges: Record<string, CellEdges>,
+	shape: TileShape,
+	tileEdges: CellEdges[],
+	anchorRow: number,
+	anchorCol: number,
+	rotation: TileRotation,
+): boolean {
+	const offsets = rotateTileOffsets(shape.offsets, rotation);
+	const tileCells = new Set(offsets.map(([dr, dc]) => getCellKey(anchorRow + dr, anchorCol + dc)));
+
+	for (let idx = 0; idx < offsets.length; idx++) {
+		const [dr, dc] = offsets[idx];
+		const r = anchorRow + dr;
+		const c = anchorCol + dc;
+		const rotatedEdges = rotateCellEdges(tileEdges[idx], rotation);
+
+		for (const [nr, nc] of EDGE_NEIGHBORS) {
+			const neighborKey = getCellKey(r + nr, c + nc);
+			if (tileCells.has(neighborKey)) continue;
+			const neighborEdges = boardEdges[neighborKey];
+			if (!neighborEdges) continue;
+
+			const [myIdx, theirIdx] = EDGE_MATCH_MAP[`${nr},${nc}`];
+			if (rotatedEdges[myIdx] !== neighborEdges[theirIdx]) return false;
+		}
+	}
+	return true;
+}
+
+/** Full placement check: in-bounds, no overlap, adjacent, and edges match. */
 export function canPlaceGameTile(
 	layer: TileLayer,
 	board: SquareBoard,
@@ -631,10 +690,22 @@ export function canPlaceGameTile(
 	anchorRow: number,
 	anchorCol: number,
 	rotation: TileRotation,
+	boardEdges?: Record<string, CellEdges>,
+	tileEdges?: CellEdges[],
 ): boolean {
 	if (!canPlaceTile(layer, board, shape, anchorRow, anchorCol, rotation)) return false;
 	if (!hasAdjacentTile(layer, shape, anchorRow, anchorCol, rotation)) return false;
+	if (boardEdges && tileEdges) {
+		if (!edgesMatch(layer, boardEdges, shape, tileEdges, anchorRow, anchorCol, rotation)) return false;
+	}
 	return true;
+}
+
+export function getPlayerTileEdges(G: GoldenAgesState, playerId: string): CellEdges[] | undefined {
+	const player = G.players[playerId];
+	if (!player) return undefined;
+	if (G.currentEra === 'I') return player.assignedLTile?.edges;
+	return player.assignedDominoTiles?.[G.currentEra]?.edges;
 }
 
 // ---------------------------------------------------------------------------
@@ -1305,6 +1376,12 @@ const GoldenAgesGame: Game<GoldenAgesState> = {
 			eraJudgementCard: null,
 			eraIVRemainingTurns: -1,
 			endGameScored: false,
+			boardEdges: {
+				'2,4': [W, L, L, L],
+				'2,5': [W, L, L, L],
+				'3,4': [L, L, L, L],
+				'3,5': [L, W, L, L],
+			},
 			history: [],
 		};
 
@@ -1370,7 +1447,8 @@ const GoldenAgesGame: Game<GoldenAgesState> = {
 			if (G.phase !== 'tilePlacement') return INVALID_MOVE;
 
 			const shape = ERA_TILE_SHAPES[G.currentEra];
-			if (!canPlaceGameTile(G.tiles, G.board, shape, anchorRow, anchorCol, rotation)) {
+			const tileEdges = getPlayerTileEdges(G, ctx.currentPlayer);
+			if (!canPlaceGameTile(G.tiles, G.board, shape, anchorRow, anchorCol, rotation, G.boardEdges, tileEdges)) {
 				return INVALID_MOVE;
 			}
 
@@ -1385,6 +1463,14 @@ const GoldenAgesGame: Game<GoldenAgesState> = {
 			);
 
 			const rotated = rotateTileOffsets(shape.offsets, rotation);
+
+			if (tileEdges) {
+				for (let idx = 0; idx < rotated.length; idx++) {
+					const key = `${anchorRow + rotated[idx][0]},${anchorCol + rotated[idx][1]}`;
+					G.boardEdges[key] = rotateCellEdges(tileEdges[idx], rotation);
+				}
+			}
+
 			const targetRow = anchorRow + rotated[0][0];
 			const targetCol = anchorCol + rotated[0][1];
 
