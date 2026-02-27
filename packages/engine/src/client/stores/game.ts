@@ -17,6 +17,7 @@ export function setDebug(enabled: boolean) {
 
 export const useGameStore = defineStore('game', () => {
   let bgioClient: ReturnType<typeof Client> | null = null;
+  const clientVersion = ref(0);
 
   const G = shallowRef<Record<string, unknown>>({});
   const currentPlayer = ref('0');
@@ -30,7 +31,10 @@ export const useGameStore = defineStore('game', () => {
 
   const isMyTurn = computed(() => isActive.value && currentPlayer.value === playerID.value);
 
-  const moves = computed(() => bgioClient?.moves ?? {});
+  const moves = computed(() => {
+    clientVersion.value;
+    return bgioClient?.moves ?? {};
+  });
 
   function syncState(state: unknown) {
     const s = state as {
@@ -75,11 +79,13 @@ export const useGameStore = defineStore('game', () => {
 
     bgioClient.subscribe(syncState);
     bgioClient.start();
+    clientVersion.value++;
   }
 
   function disconnect() {
     bgioClient?.stop();
     bgioClient = null;
+    clientVersion.value++;
     G.value = {};
     currentPlayer.value = '0';
     gameover.value = undefined;
