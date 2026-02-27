@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useToast } from '../composables/useToast.js';
-import { X } from 'lucide-vue-next';
+import { IconX } from '@tabler/icons-vue';
 
 const { toasts, dismiss } = useToast();
 </script>
@@ -17,7 +17,7 @@ const { toasts, dismiss } = useToast();
       >
         <span class="toast-msg">{{ toast.message }}</span>
         <button class="toast-close" aria-label="Dismiss">
-          <X :size="14" />
+          <IconX :size="14" />
         </button>
       </div>
     </TransitionGroup>

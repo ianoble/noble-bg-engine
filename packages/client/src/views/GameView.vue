@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted } from 'vue';
 import { useGame, loadSession, GameLog } from '@noble/bg-engine/client';
 import { boardComponents } from '../games/registry.js';
 import { gameMap } from '@noble/bg-engine';
-import { Loader2 } from 'lucide-vue-next';
+import { IconLoader2 } from '@tabler/icons-vue';
 
 const props = defineProps<{ gameId: string; matchID: string; playerID: string }>();
 const game = useGame();
@@ -28,7 +28,7 @@ onUnmounted(() => game.disconnect());
       <Transition name="fade">
         <div v-if="reconnecting" class="reconnecting-overlay">
           <div class="reconnecting-card">
-            <Loader2 :size="28" class="spin" />
+            <IconLoader2 :size="28" class="spin" />
             <span class="reconnecting-text">Reconnecting&hellip;</span>
             <span class="reconnecting-hint">Restoring your session</span>
           </div>

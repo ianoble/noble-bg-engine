@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue';
 import { useGame } from '../composables/useGame.js';
-import { ScrollText, X } from 'lucide-vue-next';
+import { IconHistory, IconX } from '@tabler/icons-vue';
 import type { LogEntry } from '../../types/index.js';
 
 const { state, playerID } = useGame();
@@ -49,7 +49,7 @@ function argsLabel(args: unknown[]): string {
     @click="mobileOpen = !mobileOpen"
     aria-label="Toggle game log"
   >
-    <ScrollText :size="18" />
+    <IconHistory :size="18" />
     <span class="toggle-label">Log</span>
     <span v-if="entries.length" class="badge-count">{{ entries.length }}</span>
   </button>
@@ -61,7 +61,7 @@ function argsLabel(args: unknown[]): string {
         <div class="log-header">
           <h3>Game Log</h3>
           <button class="log-close" aria-label="Close log" @click="mobileOpen = false">
-            <X :size="16" />
+            <IconX :size="16" />
           </button>
         </div>
         <div ref="scrollMobile" class="log-scroll">

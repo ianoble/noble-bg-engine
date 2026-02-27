@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { gameRegistry } from '@noble/bg-engine';
 import type { GameDefinition } from '@noble/bg-engine';
-import { Copy, Check, Plus, LogIn } from 'lucide-vue-next';
+import { IconCopy, IconCheck, IconPlus, IconLogin } from '@tabler/icons-vue';
 import { saveSession } from '@noble/bg-engine/client';
 
 const router = useRouter();
@@ -165,7 +165,7 @@ async function joinMatch() {
         <h2>New Match</h2>
         <p class="hint">Create a <strong>{{ selectedGame!.displayName }}</strong> room and invite a friend.</p>
         <button class="btn-primary" :disabled="creating" @click="createMatch">
-          <Plus :size="16" />
+          <IconPlus :size="16" />
           {{ creating ? 'Creating…' : 'Create Room' }}
         </button>
 
@@ -174,8 +174,8 @@ async function joinMatch() {
           <div class="link-row">
             <code class="match-code">{{ createdMatchID }}</code>
             <button class="btn-icon" :title="linkCopied ? 'Copied!' : 'Copy invite link'" @click="copyLink">
-              <Check v-if="linkCopied" :size="16" class="icon-success" />
-              <Copy v-else :size="16" />
+              <IconCheck v-if="linkCopied" :size="16" class="icon-success" />
+              <IconCopy v-else :size="16" />
             </button>
           </div>
           <button class="btn-primary" @click="goToCreatedMatch">Enter Room</button>
@@ -188,7 +188,7 @@ async function joinMatch() {
         <div class="form-row">
           <input v-model="joinMatchID" placeholder="Match ID" class="input" />
           <button class="btn-primary" :disabled="!joinMatchID.trim() || joining" @click="joinMatch">
-            <LogIn :size="16" />
+            <IconLogin :size="16" />
             {{ joining ? 'Joining…' : 'Join' }}
           </button>
         </div>

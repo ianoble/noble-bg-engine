@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { gameMap } from '@noble/bg-engine';
-import { Loader2 } from 'lucide-vue-next';
+import { IconLoader2 } from '@tabler/icons-vue';
 import { saveSession, loadSession } from '@noble/bg-engine/client';
 
 const props = defineProps<{ gameId: string; matchID: string }>();
@@ -64,7 +64,7 @@ onMounted(async () => {
 <template>
   <div class="join-view">
     <template v-if="status === 'loading'">
-      <Loader2 :size="32" class="spin" />
+      <IconLoader2 :size="32" class="spin" />
       <p class="join-text">Joining match&hellip;</p>
     </template>
     <template v-else>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCardInspect } from '../../composables/useCardInspect.js';
-import { X } from 'lucide-vue-next';
+import { IconX } from '@tabler/icons-vue';
 
 const { inspectedCard, dismiss } = useCardInspect();
 
@@ -22,7 +22,7 @@ function onOverlayClick(ev: MouseEvent) {
       >
         <div class="inspector-card">
           <button class="inspector-close" aria-label="Close" @click="dismiss">
-            <X :size="18" />
+            <IconX :size="18" />
           </button>
           <div class="inspector-content">
             <slot :card="inspectedCard">
