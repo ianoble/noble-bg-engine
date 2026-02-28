@@ -19,7 +19,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "postdev": "powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1",
+    "start": "tsc",
+    "poststart": "powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1"
   },
   "dependencies": {
     "boardgame.io": "^0.50.2",
