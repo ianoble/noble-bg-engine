@@ -1597,7 +1597,7 @@ const GoldenAgesGame: Game<GoldenAgesState> = {
 						G.cities.some((c) => c.row === destRow && c.col === destCol);
 					if (hasCapitalOrCity) return INVALID_MOVE;
 
-					const hasConstruction = player.researchedTechs[2][1];
+					const hasConstruction = player.researchedTechs[2][2];
 					const cubeCost = hasConstruction ? 2 : 1;
 					if (player.cubes < cubeCost) return INVALID_MOVE;
 
@@ -1710,7 +1710,7 @@ const GoldenAgesGame: Game<GoldenAgesState> = {
 						G.cities.some((c) => c.row === destRow && c.col === destCol);
 					if (hasCapitalOrCity) return INVALID_MOVE;
 
-					const hasConstruction = player.researchedTechs[2][1];
+					const hasConstruction = player.researchedTechs[2][2];
 					const cubeCost = hasConstruction ? 2 : 1;
 					if (player.cubes < cubeCost) return INVALID_MOVE;
 
