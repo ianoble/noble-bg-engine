@@ -1,16 +1,24 @@
 /**
- * Register external game definitions with the server.
+ * Optionally register external game definitions with the server.
  *
- * For local dev: import from the the-golden-ages project (sibling of noble-bg-engine
- * at c:\code\the-golden-ages) so the server runs the same game logic as the client,
- * including setupData and the Cults & Culture expansion.
+ * Only loads when EXTERNAL_GAME_PATH is set (e.g. for local dev when the-golden-ages
+ * is a sibling project). On Render or other deploys, leave it unset so the server
+ * builds and runs with only the built-in games (e.g. tic-tac-toe).
  *
- * For deployment when the-golden-ages is not a sibling: copy the game into ./games/
- * and switch the import to './games/the-golden-ages.js'.
+ * For local dev with the-golden-ages at c:\code\the-golden-ages, set:
+ *   EXTERNAL_GAME_PATH to the absolute path of the game module, e.g.
+ *   file:///c:/code/the-golden-ages/src/logic/game-logic.js
+ *   (Node ESM dynamic import requires file:// for absolute paths on Windows.)
  */
 import { registerGame } from '@noble/bg-engine';
 
-// Path from packages/server/src to c:\code\the-golden-ages\src\logic\game-logic
-import { gameDef } from '../../../../the-golden-ages/src/logic/game-logic.js';
-
-registerGame(gameDef);
+export async function loadExternalGames(): Promise<void> {
+  const path = process.env.EXTERNAL_GAME_PATH;
+  if (!path) return;
+  try {
+    const mod = await import(/* @vite-ignore */ path);
+    if (mod?.gameDef) registerGame(mod.gameDef);
+  } catch {
+    // Path missing or invalid (e.g. on Render); skip.
+  }
+}
