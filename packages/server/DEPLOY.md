@@ -33,9 +33,8 @@ Or use the legacy `THE_GOLDEN_AGES_PATH` (and sibling `the-golden-ages`) for tha
 
 From `packages/server`:
 
-- **`npm run build:external-games`** — Builds all configured games into `dist/games/*.js` (uses [scripts/build-external-games.mjs](scripts/build-external-games.mjs)).
-- **`npm run build:with-external-games`** — Runs `build:external-games` then the normal server `build`. Use this on Render so the server and all game bundles are built in one step.
-- **`npm run build:golden-ages`** / **`npm run build:with-golden-ages`** — Same as above (kept for backward compatibility).
+- **`npm run build:external-games`** — Builds all games in `src/games/` (and any external config) into `dist/games/*.js`.
+- **`npm run build:with-external-games`** — Runs `build:external-games` then the normal server `build`. Use this on Render (or any deploy).
 
 ---
 
