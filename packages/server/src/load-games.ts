@@ -1,16 +1,10 @@
 /**
- * Loads external game definitions from a games directory or legacy single-file paths.
- *
- * Primary: reads dist/games/*.js (and cwd/games/*.js). Each file may export
- * `gameDef` or `gameDefs` (array); all are registered. Add new games by
- * adding a build entry and dropping a bundle into that directory — no server
- * code changes.
- *
- * Fallbacks (for backward compatibility):
- * - EXTERNAL_GAME_PATH — single module path (file:// or absolute).
- * - ./game-logic.js in cwd or next to the server entry.
+ * Loads external game definitions. In-repo games (src/games/) are bundled into
+ * the server via generated/in-repo-games.ts. Optional: game-*.js next to index.cjs,
+ * dist/games/*.js, or EXTERNAL_GAME_PATH.
  */
 import { registerGame } from '@noble/bg-engine';
+import { registerInRepoGames } from './generated/in-repo-games.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -35,8 +29,10 @@ async function registerModule(mod: { gameDef?: unknown; gameDefs?: unknown[] }):
 }
 
 export async function loadExternalGames(): Promise<void> {
+  registerInRepoGames();
+
   const serverDir = getServerDir();
-  // 1) game-*.js next to index.cjs (same dir) — always included in deploy
+  // game-*.js next to index.cjs, dist/games/*.js, cwd/games/*.js
   const serverDirFiles = fs.existsSync(serverDir) && fs.statSync(serverDir).isDirectory()
     ? fs.readdirSync(serverDir).filter((f) => f.startsWith('game-') && f.endsWith('.js'))
     : [];

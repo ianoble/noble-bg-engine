@@ -52,6 +52,30 @@ if (entryPoints.length === 0) {
   console.log('[build-external-games] no .ts/.js in any of', gamesSrcCandidates);
 }
 
+// 1b. Generate in-repo games registry so the server bundle can include them (one index.cjs, no extra deploy files).
+const generatedDir = path.join(serverRoot, 'src', 'generated');
+fs.mkdirSync(generatedDir, { recursive: true });
+const registryPath = path.join(generatedDir, 'in-repo-games.ts');
+const lines =
+  entryPoints.length > 0
+    ? [
+        '/** Auto-generated; do not edit. In-repo games are bundled into the server. */',
+        "import { registerGame } from '@noble/bg-engine';",
+        ...entryPoints.map((e, i) => {
+          const basename = path.basename(e.in, path.extname(e.in));
+          return `import { gameDef as def${i} } from '../games/${basename}.js';`;
+        }),
+        'export function registerInRepoGames(): void {',
+        ...entryPoints.map((_, i) => `  registerGame(def${i});`),
+        '}',
+      ]
+    : [
+        '/** Auto-generated; do not edit. */',
+        'export function registerInRepoGames(): void {}',
+      ];
+fs.writeFileSync(registryPath, lines.join('\n') + '\n', 'utf8');
+console.log('[build-external-games] generated', registryPath, entryPoints.length > 0 ? `(${entryPoints.length} game(s))` : '(no in-repo games)');
+
 // 2. Optional: external games (other repos). Set EXTERNAL_GAMES_CONFIG to a JSON array of
 //    { "slug": "my-game", "path": "/absolute/path/to/entry.ts" }.
 const externalEntries = [];
@@ -91,26 +115,22 @@ if (legacyPaths.length === 0) {
     }
   }
 }
-const hasGoldenAgesInRepo = entryPoints.some((e) => path.basename(e.out) === 'game-the-golden-ages.js');
+const hasGoldenAgesInRepo = entryPoints.length > 0 && entryPoints.some((e) => path.basename(e.in, path.extname(e.in)) === 'the-golden-ages');
 if (!hasGoldenAgesInRepo) {
   for (const e of legacyPaths) externalEntries.push(e);
 }
 
-const all = [...entryPoints, ...externalEntries];
-if (all.length === 0) {
-  console.warn('[build-external-games] No games found in src/games/ or EXTERNAL_GAMES_CONFIG. Skipping.');
-  process.exit(0);
-}
-
-// Single esbuild run for all games (faster than N separate builds).
-await build({
-  entryPoints: Object.fromEntries(all.map((e) => [e.out, e.in])),
-  bundle: true,
-  platform: 'node',
-  format: 'cjs',
-  external: ['@noble/bg-engine', 'boardgame.io', 'boardgame.io/core'],
-});
-
-for (const e of all) {
-  console.log('[build-external-games] Wrote', e.out);
+// Only build external games to dist/; in-repo games are bundled into the server via the generated registry.
+const all = [...externalEntries];
+if (all.length > 0) {
+  await build({
+    entryPoints: Object.fromEntries(all.map((e) => [e.out, e.in])),
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    external: ['@noble/bg-engine', 'boardgame.io', 'boardgame.io/core'],
+  });
+  for (const e of all) {
+    console.log('[build-external-games] Wrote', e.out);
+  }
 }
