@@ -14,29 +14,42 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Output always next to script (server dist/games) so the server finds it at runtime.
 const serverRoot = path.resolve(__dirname, '..');
-const gamesSrcDir = path.join(serverRoot, 'src', 'games');
 const outDir = path.join(serverRoot, 'dist', 'games');
+// Discover from script-relative and cwd-relative (npm -w from repo root may leave cwd at root).
+const gamesSrcCandidates = [
+  path.join(serverRoot, 'src', 'games'),
+  path.join(process.cwd(), 'src', 'games'),
+  path.join(process.cwd(), 'packages', 'server', 'src', 'games'),
+];
 
+console.log('[build-external-games] cwd=', process.cwd(), '| outDir=', outDir);
 fs.mkdirSync(outDir, { recursive: true });
 
 const entryPoints = [];
+const seen = new Set();
 
-// 1. Discover all games in src/games/ — add a file, it gets built; no config.
-if (fs.existsSync(gamesSrcDir) && fs.statSync(gamesSrcDir).isDirectory()) {
+// 1. Discover all games in src/games/ from any candidate path.
+for (const gamesSrcDir of gamesSrcCandidates) {
+  if (!fs.existsSync(gamesSrcDir) || !fs.statSync(gamesSrcDir).isDirectory()) continue;
   const files = fs.readdirSync(gamesSrcDir);
   for (const file of files) {
     if (!/\.(ts|js)$/.test(file)) continue;
     const fullPath = path.join(gamesSrcDir, file);
     if (!fs.statSync(fullPath).isFile()) continue;
     const basename = path.basename(file, path.extname(file));
+    if (seen.has(basename)) continue;
+    seen.add(basename);
     entryPoints.push({ in: fullPath, out: path.join(outDir, `${basename}.js`) });
   }
   if (entryPoints.length > 0) {
-    console.log('[build-external-games] found', entryPoints.length, 'game(s) in', gamesSrcDir);
+    console.log('[build-external-games] found', entryPoints.length, 'game(s), first from', gamesSrcDir);
+    break;
   }
-} else {
-  console.log('[build-external-games] no src/games dir at', gamesSrcDir);
+}
+if (entryPoints.length === 0) {
+  console.log('[build-external-games] no .ts/.js in any of', gamesSrcCandidates);
 }
 
 // 2. Optional: external games (other repos). Set EXTERNAL_GAMES_CONFIG to a JSON array of
