@@ -714,7 +714,8 @@ export function getPlayerTileEdges(G: GoldenAgesState, playerId: string): CellEd
 
 function revealEraCards(G: GoldenAgesState, numPlayers: number): void {
 	const era = G.currentEra;
-	G.availableWonders = G.decks.wonder[era].splice(0);
+	const wonderDraw = ERA_COUNTS.wonder[era];
+	G.availableWonders = G.decks.wonder[era].splice(0, wonderDraw);
 	G.availableBuildings = G.decks.building[era].splice(0, numPlayers);
 	G.phase = 'eraStart';
 	G.eraStartDone = 0;

@@ -3,6 +3,8 @@ export interface PlayerSession {
   playerID: string;
   credentials: string;
   playerName: string;
+  /** Optional player color chosen when creating or joining (e.g. 'red', 'blue'). */
+  playerColor?: string;
 }
 
 const PREFIX = 'bgf:session:';

@@ -1,12 +1,16 @@
 /**
  * Register external game definitions with the server.
  *
- * For deployment, game-logic files are copied into ./games/ so esbuild can
- * bundle them. For local dev you can also import via a relative path to an
- * external project (the file must import from `@noble/bg-engine`, not
- * `@noble/bg-engine/client`).
+ * For local dev: import from the the-golden-ages project (sibling of noble-bg-engine
+ * at c:\code\the-golden-ages) so the server runs the same game logic as the client,
+ * including setupData and the Cults & Culture expansion.
+ *
+ * For deployment when the-golden-ages is not a sibling: copy the game into ./games/
+ * and switch the import to './games/the-golden-ages.js'.
  */
 import { registerGame } from '@noble/bg-engine';
-import { gameDef } from './games/the-golden-ages.js';
+
+// Path from packages/server/src to c:\code\the-golden-ages\src\logic\game-logic
+import { gameDef } from '../../../../the-golden-ages/src/logic/game-logic.js';
 
 registerGame(gameDef);
