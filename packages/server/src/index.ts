@@ -21,17 +21,16 @@ if (process.env.FRONTEND_URL) {
   origins.push(process.env.FRONTEND_URL);
 }
 
-const server = Server({
-  games: gameRegistry.map((def) => prepareGame(def)),
-  origins,
-  db,
-});
-
-server.app.use(createGate(hasDb, origins));
-server.app.use(createAuthRoutes(hasDb, origins));
-
 async function start() {
   await loadExternalGames();
+
+  const server = Server({
+    games: gameRegistry.map((def) => prepareGame(def)),
+    origins,
+    db,
+  });
+  server.app.use(createGate(hasDb, origins));
+  server.app.use(createAuthRoutes(hasDb, origins));
 
   if (hasDb) {
     await initAuthTables();
