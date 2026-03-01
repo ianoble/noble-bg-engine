@@ -1,10 +1,7 @@
 import type { GameDefinition } from '../types/index.js';
-import { ticTacToeDef } from './tic-tac-toe/index.js';
 
-/** All registered games. Add new games here. */
-export const gameRegistry: GameDefinition[] = [
-	ticTacToeDef,
-];
+/** All registered games. Games are added at runtime via registerGame() (e.g. from server in-repo games). */
+export const gameRegistry: GameDefinition[] = [];
 
 /** Lookup a game definition by its id. */
 export const gameMap: Record<string, GameDefinition> = Object.fromEntries(

@@ -4,55 +4,83 @@ import type { BaseGameState } from '@engine/client';
 import { INVALID_MOVE } from 'boardgame.io/core';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types — minimal Golden-Ages-style: board, territory, gold, multi-category scoring
 // ---------------------------------------------------------------------------
 
 export type PlayerColor = 'red' | 'blue' | 'green' | 'yellow';
 
 export const PLAYER_COLORS: PlayerColor[] = ['red', 'blue', 'green', 'yellow'];
 
-export type CellValue = 'X' | 'O' | null;
+export const BOARD_SIZE = 4;
 
 export interface TemplateGameState extends BaseGameState {
-	cells: CellValue[];
-	players: Record<string, { color: PlayerColor; score: number }>;
-	winner: string | undefined;
-	isDraw: boolean;
+	/** 2D board: cell is playerId who placed there, or null. */
+	board: (string | null)[][];
+	players: Record<string, { color: PlayerColor; score: number; gold: number }>;
 	endGameScored: boolean;
 	endGameScoreBreakdown: Record<string, { label: string; vp: number }[]>;
 }
 
 // ---------------------------------------------------------------------------
-// Game logic
+// Helpers
 // ---------------------------------------------------------------------------
 
-function checkWinner(cells: CellValue[]): string | null {
-	const lines = [
-		[0, 1, 2], [3, 4, 5], [6, 7, 8],
-		[0, 3, 6], [1, 4, 7], [2, 5, 8],
-		[0, 4, 8], [2, 4, 6],
-	];
-	for (const [a, b, c] of lines) {
-		if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) {
-			return cells[a] === 'X' ? '0' : '1';
+function createEmptyBoard(): (string | null)[][] {
+	return Array(BOARD_SIZE)
+		.fill(null)
+		.map(() => Array(BOARD_SIZE).fill(null));
+}
+
+function isBoardFull(G: TemplateGameState): boolean {
+	return G.board.every((row) => row.every((cell) => cell !== null));
+}
+
+function countTerritory(G: TemplateGameState, playerId: string): number {
+	let count = 0;
+	for (const row of G.board) {
+		for (const cell of row) {
+			if (cell === playerId) count++;
 		}
 	}
-	return null;
+	return count;
 }
+
+function performEndGameScoring(G: TemplateGameState): void {
+	if (G.endGameScored) return;
+	G.endGameScored = true;
+	const pids = Object.keys(G.players);
+	G.endGameScoreBreakdown = {};
+	for (const pid of pids) {
+		const territory = countTerritory(G, pid);
+		const goldVp = Math.floor(G.players[pid].gold / 3);
+		G.players[pid].score = territory + goldVp;
+		G.endGameScoreBreakdown[pid] = [
+			{ label: 'Territory (1 VP per cell)', vp: territory },
+			{ label: 'Gold (1 VP per 3)', vp: goldVp },
+			{ label: 'Final score', vp: territory + goldVp },
+		];
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Game
+// ---------------------------------------------------------------------------
 
 export const TemplateGame: Game<TemplateGameState> = {
 	name: 'template-game',
 
 	setup: (ctx): TemplateGameState => {
-		const players: Record<string, { color: PlayerColor; score: number }> = {};
+		const players: Record<string, { color: PlayerColor; score: number; gold: number }> = {};
 		for (let i = 0; i < ctx.numPlayers; i++) {
-			players[String(i)] = { color: PLAYER_COLORS[i % PLAYER_COLORS.length], score: 0 };
+			players[String(i)] = {
+				color: PLAYER_COLORS[i % PLAYER_COLORS.length],
+				score: 0,
+				gold: 0,
+			};
 		}
 		return {
-			cells: Array(9).fill(null),
+			board: createEmptyBoard(),
 			players,
-			winner: undefined,
-			isDraw: false,
 			endGameScored: false,
 			endGameScoreBreakdown: {},
 			history: [],
@@ -67,36 +95,30 @@ export const TemplateGame: Game<TemplateGameState> = {
 				G.players[pid].color = color;
 			}
 		},
-		clickCell: ({ G, ctx }: { G: TemplateGameState; ctx: Ctx }, cellIndex: number) => {
-			if (cellIndex < 0 || cellIndex > 8 || G.cells[cellIndex] !== null) return INVALID_MOVE;
-			G.cells[cellIndex] = ctx.currentPlayer === '0' ? 'X' : 'O';
-			const winner = checkWinner(G.cells);
-			const isDraw = G.cells.every((c) => c !== null) && !winner;
-			if (winner || isDraw) {
-				G.endGameScored = true;
-				const pids = Object.keys(G.players);
-				for (const pid of pids) {
-					G.players[pid].score = winner === pid ? 1 : 0;
-					if (isDraw) G.players[pid].score = 0;
-				}
-				G.endGameScoreBreakdown = {};
-				for (const pid of pids) {
-					G.endGameScoreBreakdown[pid] = [
-						{ label: 'Score during game', vp: 0 },
-						{ label: 'Final score', vp: G.players[pid].score },
-					];
-				}
-				if (winner) G.winner = winner;
-				if (isDraw) G.isDraw = true;
+		placePiece: ({ G, ctx }: { G: TemplateGameState; ctx: Ctx }, row: number, col: number) => {
+			if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) return INVALID_MOVE;
+			if (G.board[row][col] !== null) return INVALID_MOVE;
+			G.board[row][col] = ctx.currentPlayer;
+			if (isBoardFull(G)) {
+				performEndGameScoring(G);
+			}
+		},
+		takeGold: ({ G, ctx }: { G: TemplateGameState; ctx: Ctx }) => {
+			G.players[ctx.currentPlayer].gold += 3;
+			if (isBoardFull(G)) {
+				performEndGameScoring(G);
 			}
 		},
 	},
 
 	endIf: ({ G }: { G: TemplateGameState }) => {
-		if (G.endGameScored) return G.winner ? { winner: G.winner } : G.isDraw ? { isDraw: true } : undefined;
-		const winner = checkWinner(G.cells);
-		if (winner) return { winner };
-		if (G.cells.every((c) => c !== null)) return { isDraw: true };
+		if (!G.endGameScored) return undefined;
+		const pids = Object.keys(G.players);
+		const scores = pids.map((pid) => G.players[pid].score);
+		const maxScore = Math.max(...scores);
+		const winners = pids.filter((pid) => G.players[pid].score === maxScore);
+		if (winners.length === 1) return { winner: winners[0] };
+		if (winners.length > 1) return { isDraw: true };
 		return undefined;
 	},
 
@@ -114,7 +136,7 @@ export const gameDef = defineGame<TemplateGameState>({
 	game: TemplateGame,
 	id: 'template-game',
 	displayName: 'Template Game',
-	description: 'Minimal game scaffold. Replace logic and board to build your game.',
+	description: 'A minimal Golden-Ages-style game: claim territory and collect gold. Replace with your own game.',
 	minPlayers: 2,
 	maxPlayers: 4,
 
@@ -125,12 +147,14 @@ export const gameDef = defineGame<TemplateGameState>({
 			if (!PLAYER_COLORS.includes(color as PlayerColor)) return 'Invalid color';
 			return true;
 		}
-		if (moveName === 'clickCell') {
-			const cellIndex = args[0];
-			if (typeof cellIndex !== 'number' || cellIndex < 0 || cellIndex > 8) return 'Invalid cell';
-			if (G.cells[cellIndex] !== null) return 'Cell already occupied';
+		if (moveName === 'placePiece') {
+			const [row, col] = args as [number, number];
+			if (typeof row !== 'number' || typeof col !== 'number') return 'Invalid cell';
+			if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) return 'Out of bounds';
+			if (G.board[row][col] !== null) return 'Cell already claimed';
 			return true;
 		}
+		if (moveName === 'takeGold') return true;
 		return true;
 	},
 });

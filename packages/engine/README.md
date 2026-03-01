@@ -104,8 +104,7 @@ Add your definition to `packages/engine/src/games/registry.ts`:
 import { myGameDef } from './my-game/index.js';
 
 export const gameRegistry: GameDefinition[] = [
-  ticTacToeDef,
-  myGameDef,  // add here
+  myGameDef,  // games are also registered at runtime (e.g. server in-repo games)
 ];
 ```
 

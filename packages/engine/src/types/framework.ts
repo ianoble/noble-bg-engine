@@ -78,13 +78,13 @@ export interface GameDefinition {
  *
  * @example
  * ```ts
- * export const ticTacToeDef = defineGame<TicTacToeState>({
- *   game: TicTacToe,
- *   id: 'tic-tac-toe',
- *   displayName: 'Tic-Tac-Toe',
- *   description: 'Classic 3×3 grid game.',
+ * export const myGameDef = defineGame<MyGameState>({
+ *   game: MyGame,
+ *   id: 'my-game',
+ *   displayName: 'My Game',
+ *   description: 'Description.',
  *   minPlayers: 2,
- *   maxPlayers: 2,
+ *   maxPlayers: 4,
  *   validateMove({ G, playerID, currentPlayer }, moveName, ...args) {
  *     if (playerID !== currentPlayer) return 'Not your turn';
  *     return true;

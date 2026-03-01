@@ -7,8 +7,8 @@ This folder is a **generic app scaffold** for building games with the [@noble/bg
 - **App shell**: Vue 3 + Pinia + Vue Router, `NobleProvider`, engine styles.
 - **Views**: Lobby (create game, list your games, open games, join with color), Join (claim seat + color), Game (header, turn cue, abandon vote, board area).
 - **Auth**: `useAuth` (register/login, session sync to server, abandon voting). Works with a dev fallback when the server returns 501.
-- **Stub game**: Minimal tic-tac-toe–style game in `src/logic/game-logic.ts` with `gameDef`, `PLAYER_COLORS`, `PlayerColor`, `setPlayerColor`, and `clickCell` so the app runs end-to-end.
-- **Stub board**: `src/components/GameBoard.vue` — a simple 3×3 grid. Replace with your game’s board.
+- **Stub game**: A minimal Golden-Ages–style game in `src/logic/game-logic.ts`: 4×4 board, claim territory with `placePiece(row, col)` or `takeGold()`; when the board is full, scoring uses Territory (1 VP per cell) and Gold (1 VP per 3). Exports `gameDef`, `PLAYER_COLORS`, `PlayerColor`, `setPlayerColor`, `getPlayerRankings`, and end-game breakdown for the score table.
+- **Stub board**: `src/components/GameBoard.vue` — 4×4 grid, "Your gold" and "Take 3 gold" button, plus the same game-over score table and count-up animation as Golden Ages. Replace with your game’s board.
 - **Stub bots**: `useBotPlayers` in composables is a no-op; replace with real bot logic if your game needs AI players.
 
 ## Using this template

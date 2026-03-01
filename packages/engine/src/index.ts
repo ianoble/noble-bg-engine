@@ -29,5 +29,3 @@ export {
 } from './utils/tile-utils.js';
 export { prepareGame } from './prepare.js';
 export { gameRegistry, gameMap, registerGame } from './games/registry.js';
-export type { TicTacToeState, CellValue } from './games/tic-tac-toe/index.js';
-export { ticTacToeDef } from './games/tic-tac-toe/index.js';

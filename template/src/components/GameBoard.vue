@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from "vue";
 import { useGame } from "@engine/client";
-import { getPlayerRankings, type TemplateGameState } from "../logic/game-logic";
+import { getPlayerRankings, BOARD_SIZE, type TemplateGameState } from "../logic/game-logic";
 
 defineProps<{ headerHeight: number }>();
 const emit = defineEmits<{ "back-to-lobby": [] }>();
 
-const { state, move, isMyTurn } = useGame();
+const { state, move, isMyTurn, playerID } = useGame();
 const G = computed(() => state.value as unknown as TemplateGameState | undefined);
-const cells = computed(() => G.value?.cells ?? Array(9).fill(null));
+const board = computed(() => G.value?.board ?? []);
 
-function cellDisplay(val: string | null): string {
-	if (val === "X") return "X";
-	if (val === "O") return "O";
-	return "";
+function cellOwner(row: number, col: number): string | null {
+	const b = board.value;
+	if (!b[row]) return null;
+	return b[row][col] ?? null;
 }
 
 // Game over overlay: score table with count-up animation (same pattern as Golden Ages)
@@ -40,9 +40,6 @@ const finalScoreTableRows = computed(() => {
 		}
 		rows.push({ label, vpsByPlayer });
 	}
-	const totalByPlayer: Record<string, number> = {};
-	for (const r of finalRankings.value) totalByPlayer[r.playerId] = r.score;
-	rows.push({ label: "Final score", vpsByPlayer: totalByPlayer });
 	return rows;
 });
 
@@ -126,25 +123,55 @@ const PLAYER_COLOR_CLASSES: Record<string, string> = {
 	green: "bg-green-500",
 	yellow: "bg-yellow-400",
 };
+
+const myGold = computed(() => {
+	const pid = playerID?.value;
+	if (!G.value?.players || pid == null) return 0;
+	return G.value.players[pid]?.gold ?? 0;
+});
+
+const boardIndices = Array.from({ length: BOARD_SIZE }, (_, i) => i);
 </script>
 
 <template>
 	<div class="w-full max-w-lg mx-auto space-y-6">
-		<p class="text-center text-slate-400 text-sm">Your game board — replace this component with your game UI.</p>
-		<div
-			class="grid grid-cols-3 gap-2 w-fit mx-auto"
-			style="grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(3, 64px);"
-		>
+		<p class="text-center text-slate-400 text-sm">
+			Claim cells or take gold. When the board is full, territory and gold score like Golden Ages.
+		</p>
+		<div v-if="G?.players" class="flex justify-center gap-4 text-sm">
+			<span class="text-slate-400">Your gold: <strong class="text-amber-300 tabular-nums">{{ myGold }}</strong></span>
 			<button
-				v-for="(cell, i) in cells"
-				:key="i"
+				v-if="!gameIsOver && isMyTurn"
 				type="button"
-				class="flex items-center justify-center text-2xl font-bold bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-				:disabled="!isMyTurn || cell !== null"
-				@click="move('clickCell', i)"
+				class="px-3 py-1 rounded bg-amber-700 hover:bg-amber-600 text-amber-100 font-medium transition-colors"
+				@click="move('takeGold')"
 			>
-				{{ cellDisplay(cell) }}
+				Take 3 gold (skip placing)
 			</button>
+		</div>
+		<div
+			class="grid gap-1.5 w-fit mx-auto"
+			:style="{ gridTemplateColumns: `repeat(${BOARD_SIZE}, 56px)`, gridTemplateRows: `repeat(${BOARD_SIZE}, 56px)` }"
+		>
+			<template v-for="row in boardIndices" :key="'r' + row">
+				<template v-for="col in boardIndices" :key="'c' + row + '-' + col">
+					<button
+						type="button"
+						class="w-full h-full rounded-lg border-2 transition-colors flex items-center justify-center text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+						:class="
+							cellOwner(row, col)
+								? [PLAYER_COLOR_CLASSES[G?.players[cellOwner(row, col)!]?.color ?? ''] ?? 'bg-slate-600', 'border-slate-500 text-white']
+								: isMyTurn && !gameIsOver
+									? 'bg-slate-800 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-slate-400'
+									: 'bg-slate-800/60 border-slate-700 text-slate-500'
+						"
+						:disabled="!isMyTurn || gameIsOver || cellOwner(row, col) !== null"
+						@click="move('placePiece', row, col)"
+					>
+						{{ cellOwner(row, col) !== null ? (G?.players[cellOwner(row, col)!]?.color?.charAt(0) ?? '') : '' }}
+					</button>
+				</template>
+			</template>
 		</div>
 	</div>
 
