@@ -39,9 +39,12 @@ export async function loadExternalGames(): Promise<void> {
   const gamesDirs = [path.join(serverDir, 'games'), path.join(process.cwd(), 'games')];
   let registeredFromGamesDir = false;
 
-  if (gamesDirs.every((d) => !fs.existsSync(d) || !fs.statSync(d).isDirectory())) {
-    console.log('[bgf] no games directory found at', gamesDirs.join(' or '));
-  }
+  const dirStatus = gamesDirs.map((d) => {
+    const exists = fs.existsSync(d) && fs.statSync(d).isDirectory();
+    const count = exists ? fs.readdirSync(d).filter((f) => f.endsWith('.js')).length : 0;
+    return `${d} (${exists ? count + ' .js' : 'missing'})`;
+  });
+  console.log('[bgf] external games: serverDir=', serverDir, '|', dirStatus.join(' | '));
 
   for (const dir of gamesDirs) {
     if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
