@@ -1,24 +1,73 @@
 /**
- * Optionally register external game definitions with the server.
+ * Loads external game definitions from a games directory or legacy single-file paths.
  *
- * Only loads when EXTERNAL_GAME_PATH is set (e.g. for local dev when the-golden-ages
- * is a sibling project). On Render or other deploys, leave it unset so the server
- * builds and runs with only the built-in games (e.g. tic-tac-toe).
+ * Primary: reads dist/games/*.js (and cwd/games/*.js). Each file may export
+ * `gameDef` or `gameDefs` (array); all are registered. Add new games by
+ * adding a build entry and dropping a bundle into that directory — no server
+ * code changes.
  *
- * For local dev with the-golden-ages at c:\code\the-golden-ages, set:
- *   EXTERNAL_GAME_PATH to the absolute path of the game module, e.g.
- *   file:///c:/code/the-golden-ages/src/logic/game-logic.js
- *   (Node ESM dynamic import requires file:// for absolute paths on Windows.)
+ * Fallbacks (for backward compatibility):
+ * - EXTERNAL_GAME_PATH — single module path (file:// or absolute).
+ * - ./game-logic.js in cwd or next to the server entry.
  */
 import { registerGame } from '@noble/bg-engine';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+/** Directory of the server entry script (CJS bundle: require.main; else cwd). */
+function getServerDir(): string {
+  const main = typeof require !== 'undefined' && (require as NodeJS.Require).main;
+  if (main && typeof main === 'object' && main.filename) return path.dirname(main.filename);
+  return process.cwd();
+}
+
+async function registerModule(mod: { gameDef?: unknown; gameDefs?: unknown[] }): Promise<boolean> {
+  if (mod.gameDef) {
+    registerGame(mod.gameDef as Parameters<typeof registerGame>[0]);
+    return true;
+  }
+  if (Array.isArray(mod.gameDefs)) {
+    for (const def of mod.gameDefs) if (def) registerGame(def as Parameters<typeof registerGame>[0]);
+    return mod.gameDefs.length > 0;
+  }
+  return false;
+}
 
 export async function loadExternalGames(): Promise<void> {
-  const path = process.env.EXTERNAL_GAME_PATH;
-  if (!path) return;
-  try {
-    const mod = await import(/* @vite-ignore */ path);
-    if (mod?.gameDef) registerGame(mod.gameDef);
-  } catch {
-    // Path missing or invalid (e.g. on Render); skip.
+  const serverDir = getServerDir();
+  const gamesDirs = [path.join(serverDir, 'games'), path.join(process.cwd(), 'games')];
+  let registeredFromGamesDir = false;
+
+  for (const dir of gamesDirs) {
+    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith('.js'));
+    for (const file of files) {
+      try {
+        const fullPath = path.join(dir, file);
+        const url = pathToFileURL(path.resolve(fullPath)).href;
+        const mod = await import(/* @vite-ignore */ url);
+        if (await registerModule(mod as { gameDef?: unknown; gameDefs?: unknown[] })) registeredFromGamesDir = true;
+      } catch {
+        // Skip invalid or missing module
+      }
+    }
+  }
+
+  if (registeredFromGamesDir) return;
+
+  const singleFileCandidates: string[] = [];
+  if (process.env.EXTERNAL_GAME_PATH) singleFileCandidates.push(process.env.EXTERNAL_GAME_PATH);
+  singleFileCandidates.push(path.join(process.cwd(), 'game-logic.js'), path.join(serverDir, 'game-logic.js'));
+
+  for (const candidate of singleFileCandidates) {
+    try {
+      if (!candidate.startsWith('file://') && !fs.existsSync(candidate)) continue;
+      const url = candidate.startsWith('file://') ? candidate : pathToFileURL(path.resolve(candidate)).href;
+      const mod = await import(/* @vite-ignore */ url);
+      if (await registerModule(mod as { gameDef?: unknown; gameDefs?: unknown[] })) break;
+    } catch {
+      // Path missing or invalid; try next.
+    }
   }
 }

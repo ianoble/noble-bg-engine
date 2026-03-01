@@ -1,0 +1,98 @@
+/**
+ * Builds game bundles into dist/games/*.js so the server can load them at startup.
+ *
+ * Scaling: no config list to maintain.
+ * - In-repo: every .ts and .js in src/games/ is built automatically. Add a game = add a file.
+ * - External: optional EXTERNAL_GAMES_CONFIG or legacy env (THE_GOLDEN_AGES_PATH / sibling).
+ *
+ * Uses one esbuild run with multiple entry points for fast builds with many games.
+ */
+
+import { build } from 'esbuild';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const serverRoot = path.resolve(__dirname, '..');
+const gamesSrcDir = path.join(serverRoot, 'src', 'games');
+const outDir = path.join(serverRoot, 'dist', 'games');
+
+fs.mkdirSync(outDir, { recursive: true });
+
+const entryPoints = [];
+
+// 1. Discover all games in src/games/ — add a file, it gets built; no config.
+if (fs.existsSync(gamesSrcDir) && fs.statSync(gamesSrcDir).isDirectory()) {
+  const files = fs.readdirSync(gamesSrcDir);
+  for (const file of files) {
+    if (!/\.(ts|js)$/.test(file)) continue;
+    const fullPath = path.join(gamesSrcDir, file);
+    if (!fs.statSync(fullPath).isFile()) continue;
+    const basename = path.basename(file, path.extname(file));
+    entryPoints.push({ in: fullPath, out: path.join(outDir, `${basename}.js`) });
+  }
+}
+
+// 2. Optional: external games (other repos). Set EXTERNAL_GAMES_CONFIG to a JSON array of
+//    { "slug": "my-game", "path": "/absolute/path/to/entry.ts" }.
+const externalEntries = [];
+if (process.env.EXTERNAL_GAMES_CONFIG) {
+  try {
+    const config = JSON.parse(process.env.EXTERNAL_GAMES_CONFIG);
+    if (Array.isArray(config)) {
+      for (const item of config) {
+        if (item?.slug && item?.path && fs.existsSync(item.path)) {
+          externalEntries.push({ in: item.path, out: path.join(outDir, `${item.slug}.js`) });
+        }
+      }
+    }
+  } catch (_) {}
+}
+
+// 3. Legacy: single external game via THE_GOLDEN_AGES_PATH or sibling the-golden-ages.
+const engineRoot = path.join(serverRoot, '..', '..');
+const legacyPaths = [];
+if (process.env.THE_GOLDEN_AGES_PATH) {
+  const root = path.resolve(process.cwd(), process.env.THE_GOLDEN_AGES_PATH);
+  for (const ext of ['.ts', '.js']) {
+    const p = path.join(root, 'src', 'logic', 'game-logic' + ext);
+    if (fs.existsSync(p)) {
+      legacyPaths.push({ in: p, out: path.join(outDir, 'the-golden-ages.js') });
+      break;
+    }
+  }
+}
+if (legacyPaths.length === 0) {
+  const sibling = path.join(engineRoot, '..', 'the-golden-ages');
+  for (const ext of ['.ts', '.js']) {
+    const p = path.join(sibling, 'src', 'logic', 'game-logic' + ext);
+    if (fs.existsSync(p)) {
+      legacyPaths.push({ in: p, out: path.join(outDir, 'the-golden-ages.js') });
+      break;
+    }
+  }
+}
+const hasGoldenAgesInRepo = entryPoints.some((e) => path.basename(e.out) === 'the-golden-ages.js');
+if (!hasGoldenAgesInRepo) {
+  for (const e of legacyPaths) externalEntries.push(e);
+}
+
+const all = [...entryPoints, ...externalEntries];
+if (all.length === 0) {
+  console.warn('[build-external-games] No games found in src/games/ or EXTERNAL_GAMES_CONFIG. Skipping.');
+  process.exit(0);
+}
+
+// Single esbuild run for all games (faster than N separate builds).
+await build({
+  entryPoints: Object.fromEntries(all.map((e) => [e.out, e.in])),
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  external: ['@noble/bg-engine', 'boardgame.io', 'boardgame.io/core'],
+});
+
+for (const e of all) {
+  console.log('[build-external-games] Wrote', e.out);
+}
