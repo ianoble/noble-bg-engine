@@ -14,9 +14,9 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Output always next to script (server dist/games) so the server finds it at runtime.
+// Output in dist/ (same dir as index.cjs) so deploy uploads include it; use game-*.js to avoid clashing with index.cjs.
 const serverRoot = path.resolve(__dirname, '..');
-const outDir = path.join(serverRoot, 'dist', 'games');
+const outDir = path.join(serverRoot, 'dist');
 // Discover from script-relative and cwd-relative (npm -w from repo root may leave cwd at root).
 const gamesSrcCandidates = [
   path.join(serverRoot, 'src', 'games'),
@@ -41,7 +41,7 @@ for (const gamesSrcDir of gamesSrcCandidates) {
     const basename = path.basename(file, path.extname(file));
     if (seen.has(basename)) continue;
     seen.add(basename);
-    entryPoints.push({ in: fullPath, out: path.join(outDir, `${basename}.js`) });
+    entryPoints.push({ in: fullPath, out: path.join(outDir, `game-${basename}.js`) });
   }
   if (entryPoints.length > 0) {
     console.log('[build-external-games] found', entryPoints.length, 'game(s), first from', gamesSrcDir);
@@ -61,7 +61,7 @@ if (process.env.EXTERNAL_GAMES_CONFIG) {
     if (Array.isArray(config)) {
       for (const item of config) {
         if (item?.slug && item?.path && fs.existsSync(item.path)) {
-          externalEntries.push({ in: item.path, out: path.join(outDir, `${item.slug}.js`) });
+          externalEntries.push({ in: item.path, out: path.join(outDir, `game-${item.slug}.js`) });
         }
       }
     }
@@ -76,7 +76,7 @@ if (process.env.THE_GOLDEN_AGES_PATH) {
   for (const ext of ['.ts', '.js']) {
     const p = path.join(root, 'src', 'logic', 'game-logic' + ext);
     if (fs.existsSync(p)) {
-      legacyPaths.push({ in: p, out: path.join(outDir, 'the-golden-ages.js') });
+      legacyPaths.push({ in: p, out: path.join(outDir, 'game-the-golden-ages.js') });
       break;
     }
   }
@@ -86,12 +86,12 @@ if (legacyPaths.length === 0) {
   for (const ext of ['.ts', '.js']) {
     const p = path.join(sibling, 'src', 'logic', 'game-logic' + ext);
     if (fs.existsSync(p)) {
-      legacyPaths.push({ in: p, out: path.join(outDir, 'the-golden-ages.js') });
+      legacyPaths.push({ in: p, out: path.join(outDir, 'game-the-golden-ages.js') });
       break;
     }
   }
 }
-const hasGoldenAgesInRepo = entryPoints.some((e) => path.basename(e.out) === 'the-golden-ages.js');
+const hasGoldenAgesInRepo = entryPoints.some((e) => path.basename(e.out) === 'game-the-golden-ages.js');
 if (!hasGoldenAgesInRepo) {
   for (const e of legacyPaths) externalEntries.push(e);
 }

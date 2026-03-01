@@ -36,15 +36,37 @@ async function registerModule(mod: { gameDef?: unknown; gameDefs?: unknown[] }):
 
 export async function loadExternalGames(): Promise<void> {
   const serverDir = getServerDir();
+  // 1) game-*.js next to index.cjs (same dir) — always included in deploy
+  const serverDirFiles = fs.existsSync(serverDir) && fs.statSync(serverDir).isDirectory()
+    ? fs.readdirSync(serverDir).filter((f) => f.startsWith('game-') && f.endsWith('.js'))
+    : [];
+  // 2) dist/games/*.js and cwd/games/*.js
   const gamesDirs = [path.join(serverDir, 'games'), path.join(process.cwd(), 'games')];
   let registeredFromGamesDir = false;
 
-  const dirStatus = gamesDirs.map((d) => {
-    const exists = fs.existsSync(d) && fs.statSync(d).isDirectory();
-    const count = exists ? fs.readdirSync(d).filter((f) => f.endsWith('.js')).length : 0;
-    return `${d} (${exists ? count + ' .js' : 'missing'})`;
-  });
+  const dirStatus = [
+    path.join(serverDir, 'game-*.js') + ` (${serverDirFiles.length} file(s))`,
+    ...gamesDirs.map((d) => {
+      const exists = fs.existsSync(d) && fs.statSync(d).isDirectory();
+      const count = exists ? fs.readdirSync(d).filter((f) => f.endsWith('.js')).length : 0;
+      return `${d} (${exists ? count + ' .js' : 'missing'})`;
+    }),
+  ];
   console.log('[bgf] external games: serverDir=', serverDir, '|', dirStatus.join(' | '));
+
+  for (const file of serverDirFiles) {
+    try {
+      const fullPath = path.join(serverDir, file);
+      const url = pathToFileURL(path.resolve(fullPath)).href;
+      const mod = await import(/* @vite-ignore */ url);
+      if (await registerModule(mod as { gameDef?: unknown; gameDefs?: unknown[] })) {
+        registeredFromGamesDir = true;
+        console.log('[bgf] loaded external game from', file);
+      }
+    } catch (err) {
+      console.warn('[bgf] failed to load game bundle', file, err);
+    }
+  }
 
   for (const dir of gamesDirs) {
     if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
