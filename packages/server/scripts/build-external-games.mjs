@@ -32,6 +32,11 @@ if (fs.existsSync(gamesSrcDir) && fs.statSync(gamesSrcDir).isDirectory()) {
     const basename = path.basename(file, path.extname(file));
     entryPoints.push({ in: fullPath, out: path.join(outDir, `${basename}.js`) });
   }
+  if (entryPoints.length > 0) {
+    console.log('[build-external-games] found', entryPoints.length, 'game(s) in', gamesSrcDir);
+  }
+} else {
+  console.log('[build-external-games] no src/games dir at', gamesSrcDir);
 }
 
 // 2. Optional: external games (other repos). Set EXTERNAL_GAMES_CONFIG to a JSON array of

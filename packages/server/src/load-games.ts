@@ -39,6 +39,10 @@ export async function loadExternalGames(): Promise<void> {
   const gamesDirs = [path.join(serverDir, 'games'), path.join(process.cwd(), 'games')];
   let registeredFromGamesDir = false;
 
+  if (gamesDirs.every((d) => !fs.existsSync(d) || !fs.statSync(d).isDirectory())) {
+    console.log('[bgf] no games directory found at', gamesDirs.join(' or '));
+  }
+
   for (const dir of gamesDirs) {
     if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
     const files = fs.readdirSync(dir).filter((f) => f.endsWith('.js'));
@@ -47,9 +51,12 @@ export async function loadExternalGames(): Promise<void> {
         const fullPath = path.join(dir, file);
         const url = pathToFileURL(path.resolve(fullPath)).href;
         const mod = await import(/* @vite-ignore */ url);
-        if (await registerModule(mod as { gameDef?: unknown; gameDefs?: unknown[] })) registeredFromGamesDir = true;
-      } catch {
-        // Skip invalid or missing module
+        if (await registerModule(mod as { gameDef?: unknown; gameDefs?: unknown[] })) {
+          registeredFromGamesDir = true;
+          console.log('[bgf] loaded external game from', file);
+        }
+      } catch (err) {
+        console.warn('[bgf] failed to load game bundle', file, err);
       }
     }
   }
