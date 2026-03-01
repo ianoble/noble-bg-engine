@@ -1,16 +1,16 @@
 {
-	"name": "noble-starter-kit",
+	"name": "noble-game-template",
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
-		"build": "vue-tsc && vite build",
+		"build": "vite build",
 		"preview": "vite preview"
 	},
 	"dependencies": {
 		"@noble/bg-engine": "file:../noble-bg-engine/packages/engine",
-		"@tabler/icons-vue": "^3.0.0",
+		"boardgame.io": "^0.50.2",
 		"pinia": "^2.3.0",
 		"vue": "^3.5.0",
 		"vue-router": "^4.5.0"
