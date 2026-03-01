@@ -15,7 +15,7 @@ const INVALID_MOVE = 'INVALID_MOVE';
  *    wired into boardgame.io's `playerView`.
  */
 export function prepareGame(def: GameDefinition): Game {
-  let game: Game = { ...def.game };
+  let game: Game = { ...def.game, name: def.id };
 
   game = applyHistoryTracking(game);
 
