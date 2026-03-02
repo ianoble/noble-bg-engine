@@ -33,6 +33,29 @@ export interface MoveValidationContext<S extends BaseGameState = BaseGameState> 
   currentPlayer: string;
 }
 
+// ---------------------------------------------------------------------------
+// Setup options — declarative schema for per-match configuration
+// ---------------------------------------------------------------------------
+
+/** A boolean toggle (e.g. "Include expansion content"). */
+export interface GameSetupOptionBoolean {
+  type: 'boolean';
+  id: string;
+  label: string;
+  description?: string;
+  default: boolean;
+}
+
+/**
+ * Union of all supported option types.
+ * Extend this union when new control types are needed (select, number, …).
+ */
+export type GameSetupOption = GameSetupOptionBoolean;
+
+// ---------------------------------------------------------------------------
+// Game definition
+// ---------------------------------------------------------------------------
+
 /**
  * Registry-facing metadata for a game.
  * The `game` field stores a boardgame.io `Game` without a state type
@@ -69,6 +92,12 @@ export interface GameDefinition {
     G: BaseGameState,
     playerID: string | null,
   ) => BaseGameState;
+  /**
+   * Declarative list of per-match options shown to the host when
+   * creating a game.  Values are passed to the game's `setup` function
+   * via boardgame.io's `setupData`.
+   */
+  setupOptions?: GameSetupOption[];
 }
 
 /**

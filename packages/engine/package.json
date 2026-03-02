@@ -19,6 +19,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "postbuild": "powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1",
     "dev": "tsc --watch",
     "postdev": "powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1",
     "start": "tsc",
