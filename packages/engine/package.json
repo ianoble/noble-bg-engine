@@ -19,11 +19,11 @@
   },
   "scripts": {
     "build": "tsc",
-    "postbuild": "powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1",
+    "postbuild": "node -e \"if(process.platform==='win32')require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1',{stdio:'inherit'})\"",
     "dev": "tsc --watch",
-    "postdev": "powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1",
+    "postdev": "node -e \"if(process.platform==='win32')require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1',{stdio:'inherit'})\"",
     "start": "tsc",
-    "poststart": "powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1"
+    "poststart": "node -e \"if(process.platform==='win32')require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1',{stdio:'inherit'})\""
   },
   "dependencies": {
     "boardgame.io": "^0.50.2",
