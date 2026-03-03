@@ -17,12 +17,15 @@
 		"prestart": "npx kill-port 8000",
 		"start": "npm run build:engine && npm run build -w packages/server && npm start -w packages/server",
 		"build": "npm run build:engine && npm run build -w packages/server && npm run build -w packages/client",
-		"build:engine": "npm run build -w packages/engine"
+		"build:engine": "npm run build -w packages/engine",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
 	},
 	"devDependencies": {
 		"concurrently": "^9.1.0",
 		"kill-port": "^2.0.1",
-		"typescript": "^5.7.0"
+		"typescript": "^5.7.0",
+		"prettier": "^3.3.3"
 	},
 	"dependencies": {
 		"fs-extra": "^11.3.3"

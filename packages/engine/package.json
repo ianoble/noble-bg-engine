@@ -23,7 +23,9 @@
     "dev": "tsc --watch",
     "postdev": "node -e \"if(process.platform==='win32')require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1',{stdio:'inherit'})\"",
     "start": "tsc",
-    "poststart": "node -e \"if(process.platform==='win32')require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1',{stdio:'inherit'})\""
+    "poststart": "node -e \"if(process.platform==='win32')require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1',{stdio:'inherit'})\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "boardgame.io": "^0.50.2",

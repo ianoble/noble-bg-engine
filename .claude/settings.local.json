@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(code /c/code/compile)",
+      "Bash(npm run build -w packages/server)",
+      "Bash(Set-Content 'C:\\\\code\\\\noble-bg-engine\\\\copy-to-client.ps1' -Encoding Unicode)",
+      "Bash(\")",
+      "Bash(powershell.exe -File \"C:\\\\code\\\\noble-bg-engine\\\\add-compile.ps1\")",
+      "Bash(powershell.exe -Command \"Get-Content ''C:\\\\code\\\\noble-bg-engine\\\\copy-to-client.ps1''\")"
+    ]
+  }
+}
