@@ -120,15 +120,80 @@ if (!hasGoldenAgesInRepo) {
   for (const e of legacyPaths) externalEntries.push(e);
 }
 
+// 4. Compile game: COMPILE_GAME_PATH or sibling compile-game (full game with phases).
+const compilePaths = [];
+if (process.env.COMPILE_GAME_PATH) {
+  const root = path.resolve(process.cwd(), process.env.COMPILE_GAME_PATH);
+  for (const ext of ['.ts', '.js']) {
+    const p = path.join(root, 'src', 'logic', 'game-logic' + ext);
+    if (fs.existsSync(p)) {
+      compilePaths.push({ in: p, out: path.join(outDir, 'game-compile.js') });
+      break;
+    }
+  }
+}
+if (compilePaths.length === 0) {
+  // Sibling: noble-bg-engine and compile-game both in e.g. c:\code
+  const siblingCompile = path.join(engineRoot, '..', 'compile-game');
+  for (const ext of ['.ts', '.js']) {
+    const p = path.join(siblingCompile, 'src', 'logic', 'game-logic' + ext);
+    if (fs.existsSync(p)) {
+      compilePaths.push({ in: p, out: path.join(outDir, 'game-compile.js') });
+      break;
+    }
+  }
+}
+if (compilePaths.length === 0) {
+  // Nested: noble-bg-engine inside compile-game (e.g. compile-game/noble-bg-engine)
+  const parentAsCompile = path.join(engineRoot, '..');
+  for (const ext of ['.ts', '.js']) {
+    const p = path.join(parentAsCompile, 'src', 'logic', 'game-logic' + ext);
+    if (fs.existsSync(p)) {
+      compilePaths.push({ in: p, out: path.join(outDir, 'game-compile.js') });
+      console.log('[build-external-games] compile-game found (parent)', parentAsCompile);
+      break;
+    }
+  }
+}
+if (compilePaths.length === 0) {
+  // Fallback: cwd or cwd/../compile-game
+  const cwdAsCompile = process.cwd();
+  const cwdParent = path.join(process.cwd(), '..');
+  for (const root of [cwdAsCompile, path.join(cwdParent, 'compile-game')]) {
+    for (const ext of ['.ts', '.js']) {
+      const p = path.join(root, 'src', 'logic', 'game-logic' + ext);
+      if (fs.existsSync(p)) {
+        compilePaths.push({ in: p, out: path.join(outDir, 'game-compile.js') });
+        console.log('[build-external-games] compile-game found at', root);
+        break;
+      }
+    }
+    if (compilePaths.length > 0) break;
+  }
+}
+if (compilePaths.length > 0) {
+  console.log('[build-external-games] building game-compile.js from', compilePaths[0].in);
+  for (const e of compilePaths) externalEntries.push(e);
+} else {
+  console.log('[build-external-games] compile-game not found (engineRoot=', engineRoot, '| sibling=', path.join(engineRoot, '..', 'compile-game'), ')');
+}
+
 // Only build external games to dist/; in-repo games are bundled into the server via the generated registry.
 const all = [...externalEntries];
 if (all.length > 0) {
   await build({
-    entryPoints: Object.fromEntries(all.map((e) => [e.out, e.in])),
+    entryPoints: Object.fromEntries(all.map((e) => [path.basename(e.out), e.in])),
+    outdir: outDir,
     bundle: true,
     platform: 'node',
     format: 'cjs',
     external: ['@noble/bg-engine', 'boardgame.io', 'boardgame.io/core'],
+    // compile-game (and similar) use @engine/client; resolve to engine package for server bundle
+    alias: {
+      '@engine/client': '@noble/bg-engine',
+      '@engine/client/index': '@noble/bg-engine',
+    },
+    logLevel: 'warning',
   });
   for (const e of all) {
     console.log('[build-external-games] Wrote', e.out);

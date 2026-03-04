@@ -19,11 +19,11 @@
   },
   "scripts": {
     "build": "tsc",
-    "postbuild": "node -e \"if(process.platform==='win32')require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1',{stdio:'inherit'})\"",
+    "postbuild": "node ../../copy-to-client.cjs",
     "dev": "tsc --watch",
-    "postdev": "node -e \"if(process.platform==='win32')require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1',{stdio:'inherit'})\"",
+    "postdev": "node ../../copy-to-client.cjs",
     "start": "tsc",
-    "poststart": "node -e \"if(process.platform==='win32')require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ../../copy-to-client.ps1',{stdio:'inherit'})\"",
+    "poststart": "node ../../copy-to-client.cjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

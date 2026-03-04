@@ -41,7 +41,13 @@ async function start() {
     console.log(`[bgf] boardgame.io server listening on http://localhost:${PORT}`);
     console.log(`[bgf] storage: ${db ? 'PostgreSQL' : 'in-memory'}`);
     console.log(`[bgf] auth: ${hasDb ? 'enabled (PostgreSQL)' : 'disabled (no DATABASE_URL)'}`);
-    console.log(`[bgf] registered games: ${gameRegistry.map((d) => d.id).join(', ')}`);
+    const ids = gameRegistry.map((d) => d.id);
+    console.log(`[bgf] registered games: ${ids.join(', ')}`);
+    if (!ids.includes('compile')) {
+      console.warn(
+        '[bgf] Compile game not registered. From noble-bg-engine root run: npm run build -w packages/server (then restart).'
+      );
+    }
   });
 }
 

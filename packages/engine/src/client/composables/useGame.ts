@@ -6,6 +6,8 @@ import { useToast, type ToastContext } from './useToast.js';
 
 export interface GameContext<S extends BaseGameState = BaseGameState> {
   state: ComputedRef<S>;
+  /** Boardgame.io context (phase, currentPlayer, etc.). */
+  ctx: Ref<{ currentPlayer: string; phase?: string; gameover?: unknown }>;
   currentPlayer: Ref<string>;
   playerID: Ref<string | null>;
   matchID: Ref<string | null>;
@@ -60,8 +62,9 @@ export function provideGameContext(toast?: ToastContext): GameContext {
     }
   }
 
-  const ctx: GameContext = {
+  const gameCtx: GameContext = {
     state: computed(() => store.G as BaseGameState),
+    ctx: store.ctx as unknown as Ref<{ currentPlayer: string; phase?: string; gameover?: unknown }>,
     currentPlayer: computed({ get: () => store.currentPlayer, set() {} }),
     playerID: computed({ get: () => store.playerID, set() {} }),
     matchID: computed({ get: () => store.matchID, set() {} }),
@@ -77,14 +80,14 @@ export function provideGameContext(toast?: ToastContext): GameContext {
     disconnect: store.disconnect,
   };
 
-  provide(GAME_KEY, ctx);
-  return ctx;
+  provide(GAME_KEY, gameCtx);
+  return gameCtx;
 }
 
 export function useGame<S extends BaseGameState = BaseGameState>(): GameContext<S> {
-  const ctx = inject(GAME_KEY);
-  if (!ctx) {
+  const injected = inject(GAME_KEY);
+  if (!injected) {
     throw new Error('useGame() requires an ancestor component to call provideGameContext()');
   }
-  return ctx as unknown as GameContext<S>;
+  return injected as unknown as GameContext<S>;
 }

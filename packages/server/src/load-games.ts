@@ -1,7 +1,7 @@
 /**
  * Loads external game definitions. In-repo games (src/games/) are bundled into
  * the server via generated/in-repo-games.ts. Optional: game-*.js next to index.cjs,
- * dist/games/*.js, or EXTERNAL_GAME_PATH.
+ * dist/games/*.js, or EXTERNAL_GAME_PATH. Compile is external-only (game-compile.js from build).
  */
 import { registerGame } from '@noble/bg-engine';
 import { registerInRepoGames } from './generated/in-repo-games.js';
@@ -29,14 +29,11 @@ async function registerModule(mod: { gameDef?: unknown; gameDefs?: unknown[] }):
 }
 
 export async function loadExternalGames(): Promise<void> {
-  registerInRepoGames();
-
+  // Load external game-*.js from dist/ first (same pattern as the-golden-ages), then in-repo games.
   const serverDir = getServerDir();
-  // game-*.js next to index.cjs, dist/games/*.js, cwd/games/*.js
   const serverDirFiles = fs.existsSync(serverDir) && fs.statSync(serverDir).isDirectory()
     ? fs.readdirSync(serverDir).filter((f) => f.startsWith('game-') && f.endsWith('.js'))
     : [];
-  // 2) dist/games/*.js and cwd/games/*.js
   const gamesDirs = [path.join(serverDir, 'games'), path.join(process.cwd(), 'games')];
   let registeredFromGamesDir = false;
 
@@ -82,20 +79,23 @@ export async function loadExternalGames(): Promise<void> {
     }
   }
 
-  if (registeredFromGamesDir) return;
+  // Only try single-file fallback if we didn't load any game from serverDir or gamesDirs
+  if (!registeredFromGamesDir) {
+    const singleFileCandidates: string[] = [];
+    if (process.env.EXTERNAL_GAME_PATH) singleFileCandidates.push(process.env.EXTERNAL_GAME_PATH);
+    singleFileCandidates.push(path.join(process.cwd(), 'game-logic.js'), path.join(serverDir, 'game-logic.js'));
 
-  const singleFileCandidates: string[] = [];
-  if (process.env.EXTERNAL_GAME_PATH) singleFileCandidates.push(process.env.EXTERNAL_GAME_PATH);
-  singleFileCandidates.push(path.join(process.cwd(), 'game-logic.js'), path.join(serverDir, 'game-logic.js'));
-
-  for (const candidate of singleFileCandidates) {
-    try {
-      if (!candidate.startsWith('file://') && !fs.existsSync(candidate)) continue;
-      const url = candidate.startsWith('file://') ? candidate : pathToFileURL(path.resolve(candidate)).href;
-      const mod = await import(/* @vite-ignore */ url);
-      if (await registerModule(mod as { gameDef?: unknown; gameDefs?: unknown[] })) break;
-    } catch {
-      // Path missing or invalid; try next.
+    for (const candidate of singleFileCandidates) {
+      try {
+        if (!candidate.startsWith('file://') && !fs.existsSync(candidate)) continue;
+        const url = candidate.startsWith('file://') ? candidate : pathToFileURL(path.resolve(candidate)).href;
+        const mod = await import(/* @vite-ignore */ url);
+        if (await registerModule(mod as { gameDef?: unknown; gameDefs?: unknown[] })) break;
+      } catch {
+        // Path missing or invalid; try next.
+      }
     }
   }
+
+  registerInRepoGames();
 }
