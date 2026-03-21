@@ -178,6 +178,41 @@ if (compilePaths.length > 0) {
   console.log('[build-external-games] compile-game not found (engineRoot=', engineRoot, '| sibling=', path.join(engineRoot, '..', 'compile-game'), ')');
 }
 
+// 5. Crown Duels: CROWN_DUELS_PATH or sibling crown-duels.
+const crownDuelsPaths = [];
+if (process.env.CROWN_DUELS_PATH) {
+  const root = path.resolve(process.cwd(), process.env.CROWN_DUELS_PATH);
+  for (const entry of ['index', 'game-logic']) {
+    for (const ext of ['.ts', '.js']) {
+      const p = path.join(root, 'src', 'logic', entry + ext);
+      if (fs.existsSync(p)) {
+        crownDuelsPaths.push({ in: p, out: path.join(outDir, 'game-crown-duels.js') });
+        break;
+      }
+    }
+    if (crownDuelsPaths.length > 0) break;
+  }
+}
+if (crownDuelsPaths.length === 0) {
+  const siblingCrownDuels = path.join(engineRoot, '..', 'crown-duels');
+  for (const entry of ['index', 'game-logic']) {
+    for (const ext of ['.ts', '.js']) {
+      const p = path.join(siblingCrownDuels, 'src', 'logic', entry + ext);
+      if (fs.existsSync(p)) {
+        crownDuelsPaths.push({ in: p, out: path.join(outDir, 'game-crown-duels.js') });
+        break;
+      }
+    }
+    if (crownDuelsPaths.length > 0) break;
+  }
+}
+if (crownDuelsPaths.length > 0) {
+  console.log('[build-external-games] building game-crown-duels.js from', crownDuelsPaths[0].in);
+  for (const e of crownDuelsPaths) externalEntries.push(e);
+} else {
+  console.log('[build-external-games] crown-duels not found (engineRoot=', engineRoot, '| sibling=', path.join(engineRoot, '..', 'crown-duels'), ')');
+}
+
 // Only build external games to dist/; in-repo games are bundled into the server via the generated registry.
 const all = [...externalEntries];
 if (all.length > 0) {

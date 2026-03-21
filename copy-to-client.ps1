@@ -31,3 +31,10 @@ $parent3 = Split-Path -Parent $dest3
 if (-not (Test-Path $parent3)) { New-Item -ItemType Directory -Path $parent3 -Force | Out-Null }
 Copy-Item $source $dest3 -Recurse
 Write-Host "Copied engine to compile-game"
+
+$dest4 = Join-Path $codeRoot "crown-duels\noble-bg-engine\packages\engine"
+if (Test-Path $dest4) { Remove-Item $dest4 -Recurse -Force }
+$parent4 = Split-Path -Parent $dest4
+if (-not (Test-Path $parent4)) { New-Item -ItemType Directory -Path $parent4 -Force | Out-Null }
+Copy-Item $source $dest4 -Recurse
+Write-Host "Copied engine to crown-duels"
