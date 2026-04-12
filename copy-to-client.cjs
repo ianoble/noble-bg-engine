@@ -16,7 +16,10 @@ if (!fs.existsSync(source)) {
 }
 
 function copyDir(src, dest) {
-  if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true });
+  // Windows often returns EPERM while another process (IDE, antivirus, Node) has
+  // handles under `dest`. Retries + force match Node's built-in mitigation.
+  const rmOpts = { recursive: true, force: true, maxRetries: 15, retryDelay: 250 };
+  if (fs.existsSync(dest)) fs.rmSync(dest, rmOpts);
   const parent = path.dirname(dest);
   if (!fs.existsSync(parent)) fs.mkdirSync(parent, { recursive: true });
   fs.cpSync(src, dest, { recursive: true });
@@ -34,7 +37,19 @@ const dests = [
 const baseTsconfig = path.join(engineRoot, 'tsconfig.base.json');
 for (const [name, projectDir, dest] of dests) {
   if (!fs.existsSync(projectDir)) continue;
-  copyDir(source, dest);
+  try {
+    copyDir(source, dest);
+  } catch (err) {
+    console.error(
+      `Could not copy engine to ${name} (${dest}):`,
+      err && err.message ? err.message : err,
+    );
+    console.error(
+      'Close apps using that folder (e.g. IDE terminals, dev servers), then run build again.',
+    );
+    process.exitCode = 1;
+    continue;
+  }
   // So the copied engine's "extends": "../../tsconfig.base.json" resolves
   const destParent = path.dirname(path.dirname(dest));
   if (fs.existsSync(baseTsconfig) && destParent) {

@@ -36,6 +36,7 @@ for (const gamesSrcDir of gamesSrcCandidates) {
   const files = fs.readdirSync(gamesSrcDir);
   for (const file of files) {
     if (!/\.(ts|js)$/.test(file)) continue;
+    if (file.endsWith('.d.ts')) continue;
     const fullPath = path.join(gamesSrcDir, file);
     if (!fs.statSync(fullPath).isFile()) continue;
     const basename = path.basename(file, path.extname(file));
@@ -211,6 +212,41 @@ if (crownDuelsPaths.length > 0) {
   for (const e of crownDuelsPaths) externalEntries.push(e);
 } else {
   console.log('[build-external-games] crown-duels not found (engineRoot=', engineRoot, '| sibling=', path.join(engineRoot, '..', 'crown-duels'), ')');
+}
+
+// 6. Western Legends: WESTERN_LEGENDS_PATH or sibling western-legends.
+const westernLegendsPaths = [];
+if (process.env.WESTERN_LEGENDS_PATH) {
+  const root = path.resolve(process.cwd(), process.env.WESTERN_LEGENDS_PATH);
+  for (const entry of ['index', 'game-logic']) {
+    for (const ext of ['.ts', '.js']) {
+      const p = path.join(root, 'src', 'logic', entry + ext);
+      if (fs.existsSync(p)) {
+        westernLegendsPaths.push({ in: p, out: path.join(outDir, 'game-western-legends.js') });
+        break;
+      }
+    }
+    if (westernLegendsPaths.length > 0) break;
+  }
+}
+if (westernLegendsPaths.length === 0) {
+  const siblingWl = path.join(engineRoot, '..', 'western-legends');
+  for (const entry of ['index', 'game-logic']) {
+    for (const ext of ['.ts', '.js']) {
+      const p = path.join(siblingWl, 'src', 'logic', entry + ext);
+      if (fs.existsSync(p)) {
+        westernLegendsPaths.push({ in: p, out: path.join(outDir, 'game-western-legends.js') });
+        break;
+      }
+    }
+    if (westernLegendsPaths.length > 0) break;
+  }
+}
+if (westernLegendsPaths.length > 0) {
+  console.log('[build-external-games] building game-western-legends.js from', westernLegendsPaths[0].in);
+  for (const e of westernLegendsPaths) externalEntries.push(e);
+} else {
+  console.log('[build-external-games] western-legends not found (sibling=', path.join(engineRoot, '..', 'western-legends'), ')');
 }
 
 // Only build external games to dist/; in-repo games are bundled into the server via the generated registry.
