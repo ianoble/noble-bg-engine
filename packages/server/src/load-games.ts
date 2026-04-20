@@ -28,24 +28,46 @@ async function registerModule(mod: { gameDef?: unknown; gameDefs?: unknown[] }):
   return false;
 }
 
+function isGameBundleFile(name: string): boolean {
+  return name.endsWith('.js') && !name.endsWith('.js.js');
+}
+
 export async function loadExternalGames(): Promise<void> {
-  // Load external game-*.js from dist/ first (same pattern as the-golden-ages), then in-repo games.
+  // Prefer dist/games/*.js (esbuild external bundles), then legacy dist/game-*.js flat layout.
   const serverDir = getServerDir();
   const serverDirFiles = fs.existsSync(serverDir) && fs.statSync(serverDir).isDirectory()
-    ? fs.readdirSync(serverDir).filter((f) => f.startsWith('game-') && f.endsWith('.js'))
+    ? fs.readdirSync(serverDir).filter((f) => f.startsWith('game-') && isGameBundleFile(f))
     : [];
   const gamesDirs = [path.join(serverDir, 'games'), path.join(process.cwd(), 'games')];
   let registeredFromGamesDir = false;
 
   const dirStatus = [
-    path.join(serverDir, 'game-*.js') + ` (${serverDirFiles.length} file(s))`,
     ...gamesDirs.map((d) => {
       const exists = fs.existsSync(d) && fs.statSync(d).isDirectory();
-      const count = exists ? fs.readdirSync(d).filter((f) => f.endsWith('.js')).length : 0;
+      const count = exists ? fs.readdirSync(d).filter(isGameBundleFile).length : 0;
       return `${d} (${exists ? count + ' .js' : 'missing'})`;
     }),
+    path.join(serverDir, 'game-*.js') + ` (${serverDirFiles.length} file(s))`,
   ];
   console.log('[bgf] external games: serverDir=', serverDir, '|', dirStatus.join(' | '));
+
+  for (const dir of gamesDirs) {
+    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
+    const files = fs.readdirSync(dir).filter(isGameBundleFile);
+    for (const file of files) {
+      try {
+        const fullPath = path.join(dir, file);
+        const url = pathToFileURL(path.resolve(fullPath)).href;
+        const mod = await import(/* @vite-ignore */ url);
+        if (await registerModule(mod as { gameDef?: unknown; gameDefs?: unknown[] })) {
+          registeredFromGamesDir = true;
+          console.log('[bgf] loaded external game from', path.join(dir, file));
+        }
+      } catch (err) {
+        console.warn('[bgf] failed to load game bundle', file, err);
+      }
+    }
+  }
 
   for (const file of serverDirFiles) {
     try {
@@ -58,24 +80,6 @@ export async function loadExternalGames(): Promise<void> {
       }
     } catch (err) {
       console.warn('[bgf] failed to load game bundle', file, err);
-    }
-  }
-
-  for (const dir of gamesDirs) {
-    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
-    const files = fs.readdirSync(dir).filter((f) => f.endsWith('.js'));
-    for (const file of files) {
-      try {
-        const fullPath = path.join(dir, file);
-        const url = pathToFileURL(path.resolve(fullPath)).href;
-        const mod = await import(/* @vite-ignore */ url);
-        if (await registerModule(mod as { gameDef?: unknown; gameDefs?: unknown[] })) {
-          registeredFromGamesDir = true;
-          console.log('[bgf] loaded external game from', file);
-        }
-      } catch (err) {
-        console.warn('[bgf] failed to load game bundle', file, err);
-      }
     }
   }
 

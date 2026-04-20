@@ -14,9 +14,11 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Output in dist/ (same dir as index.cjs) so deploy uploads include it; use game-*.js to avoid clashing with index.cjs.
+// External game bundles go under dist/games/*.js (see load-games.ts). Registry generation still uses dist/.
 const serverRoot = path.resolve(__dirname, '..');
 const outDir = path.join(serverRoot, 'dist');
+/** Built game-*.js modules (esbuild outdir). Keys in entryPoints must be basenames WITHOUT .js (esbuild adds it). */
+const gamesOutDir = path.join(outDir, 'games');
 // Discover from script-relative and cwd-relative (npm -w from repo root may leave cwd at root).
 const gamesSrcCandidates = [
   path.join(serverRoot, 'src', 'games'),
@@ -24,8 +26,9 @@ const gamesSrcCandidates = [
   path.join(process.cwd(), 'packages', 'server', 'src', 'games'),
 ];
 
-console.log('[build-external-games] cwd=', process.cwd(), '| outDir=', outDir);
+console.log('[build-external-games] cwd=', process.cwd(), '| outDir=', outDir, '| gamesOutDir=', gamesOutDir);
 fs.mkdirSync(outDir, { recursive: true });
+fs.mkdirSync(gamesOutDir, { recursive: true });
 
 const entryPoints = [];
 const seen = new Set();
@@ -86,7 +89,7 @@ if (process.env.EXTERNAL_GAMES_CONFIG) {
     if (Array.isArray(config)) {
       for (const item of config) {
         if (item?.slug && item?.path && fs.existsSync(item.path)) {
-          externalEntries.push({ in: item.path, out: path.join(outDir, `game-${item.slug}.js`) });
+          externalEntries.push({ in: item.path, out: path.join(gamesOutDir, `game-${item.slug}.js`) });
         }
       }
     }
@@ -101,7 +104,7 @@ if (process.env.THE_GOLDEN_AGES_PATH) {
   for (const ext of ['.ts', '.js']) {
     const p = path.join(root, 'src', 'logic', 'game-logic' + ext);
     if (fs.existsSync(p)) {
-      legacyPaths.push({ in: p, out: path.join(outDir, 'game-the-golden-ages.js') });
+      legacyPaths.push({ in: p, out: path.join(gamesOutDir, 'game-the-golden-ages.js') });
       break;
     }
   }
@@ -111,7 +114,7 @@ if (legacyPaths.length === 0) {
   for (const ext of ['.ts', '.js']) {
     const p = path.join(sibling, 'src', 'logic', 'game-logic' + ext);
     if (fs.existsSync(p)) {
-      legacyPaths.push({ in: p, out: path.join(outDir, 'game-the-golden-ages.js') });
+      legacyPaths.push({ in: p, out: path.join(gamesOutDir, 'game-the-golden-ages.js') });
       break;
     }
   }
@@ -128,7 +131,7 @@ if (process.env.COMPILE_GAME_PATH) {
   for (const ext of ['.ts', '.js']) {
     const p = path.join(root, 'src', 'logic', 'game-logic' + ext);
     if (fs.existsSync(p)) {
-      compilePaths.push({ in: p, out: path.join(outDir, 'game-compile.js') });
+      compilePaths.push({ in: p, out: path.join(gamesOutDir, 'game-compile.js') });
       break;
     }
   }
@@ -139,7 +142,7 @@ if (compilePaths.length === 0) {
   for (const ext of ['.ts', '.js']) {
     const p = path.join(siblingCompile, 'src', 'logic', 'game-logic' + ext);
     if (fs.existsSync(p)) {
-      compilePaths.push({ in: p, out: path.join(outDir, 'game-compile.js') });
+      compilePaths.push({ in: p, out: path.join(gamesOutDir, 'game-compile.js') });
       break;
     }
   }
@@ -150,7 +153,7 @@ if (compilePaths.length === 0) {
   for (const ext of ['.ts', '.js']) {
     const p = path.join(parentAsCompile, 'src', 'logic', 'game-logic' + ext);
     if (fs.existsSync(p)) {
-      compilePaths.push({ in: p, out: path.join(outDir, 'game-compile.js') });
+      compilePaths.push({ in: p, out: path.join(gamesOutDir, 'game-compile.js') });
       console.log('[build-external-games] compile-game found (parent)', parentAsCompile);
       break;
     }
@@ -164,7 +167,7 @@ if (compilePaths.length === 0) {
     for (const ext of ['.ts', '.js']) {
       const p = path.join(root, 'src', 'logic', 'game-logic' + ext);
       if (fs.existsSync(p)) {
-        compilePaths.push({ in: p, out: path.join(outDir, 'game-compile.js') });
+        compilePaths.push({ in: p, out: path.join(gamesOutDir, 'game-compile.js') });
         console.log('[build-external-games] compile-game found at', root);
         break;
       }
@@ -187,7 +190,7 @@ if (process.env.CROWN_DUELS_PATH) {
     for (const ext of ['.ts', '.js']) {
       const p = path.join(root, 'src', 'logic', entry + ext);
       if (fs.existsSync(p)) {
-        crownDuelsPaths.push({ in: p, out: path.join(outDir, 'game-crown-duels.js') });
+        crownDuelsPaths.push({ in: p, out: path.join(gamesOutDir, 'game-crown-duels.js') });
         break;
       }
     }
@@ -200,7 +203,7 @@ if (crownDuelsPaths.length === 0) {
     for (const ext of ['.ts', '.js']) {
       const p = path.join(siblingCrownDuels, 'src', 'logic', entry + ext);
       if (fs.existsSync(p)) {
-        crownDuelsPaths.push({ in: p, out: path.join(outDir, 'game-crown-duels.js') });
+        crownDuelsPaths.push({ in: p, out: path.join(gamesOutDir, 'game-crown-duels.js') });
         break;
       }
     }
@@ -222,7 +225,7 @@ if (process.env.WESTERN_LEGENDS_PATH) {
     for (const ext of ['.ts', '.js']) {
       const p = path.join(root, 'src', 'logic', entry + ext);
       if (fs.existsSync(p)) {
-        westernLegendsPaths.push({ in: p, out: path.join(outDir, 'game-western-legends.js') });
+        westernLegendsPaths.push({ in: p, out: path.join(gamesOutDir, 'game-western-legends.js') });
         break;
       }
     }
@@ -235,7 +238,7 @@ if (westernLegendsPaths.length === 0) {
     for (const ext of ['.ts', '.js']) {
       const p = path.join(siblingWl, 'src', 'logic', entry + ext);
       if (fs.existsSync(p)) {
-        westernLegendsPaths.push({ in: p, out: path.join(outDir, 'game-western-legends.js') });
+        westernLegendsPaths.push({ in: p, out: path.join(gamesOutDir, 'game-western-legends.js') });
         break;
       }
     }
@@ -249,12 +252,13 @@ if (westernLegendsPaths.length > 0) {
   console.log('[build-external-games] western-legends not found (sibling=', path.join(engineRoot, '..', 'western-legends'), ')');
 }
 
-// Only build external games to dist/; in-repo games are bundled into the server via the generated registry.
+// Only build external games to dist/games/; in-repo games are bundled into the server via the generated registry.
 const all = [...externalEntries];
 if (all.length > 0) {
   await build({
-    entryPoints: Object.fromEntries(all.map((e) => [path.basename(e.out), e.in])),
-    outdir: outDir,
+    // esbuild adds .js to each key; keys must NOT include .js or you get game-foo.js.js
+    entryPoints: Object.fromEntries(all.map((e) => [path.basename(e.out, '.js'), e.in])),
+    outdir: gamesOutDir,
     bundle: true,
     platform: 'node',
     format: 'cjs',
