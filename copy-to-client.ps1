@@ -17,13 +17,6 @@ if (-not (Test-Path $parent1)) { New-Item -ItemType Directory -Path $parent1 -Fo
 Copy-Item $source $dest1 -Recurse
 Write-Host "Copied engine to the-golden-ages"
 
-$dest2 = Join-Path $codeRoot "ZIA\noble-bg-engine\packages\engine"
-if (Test-Path $dest2) { Remove-Item $dest2 -Recurse -Force }
-$parent2 = Split-Path -Parent $dest2
-if (-not (Test-Path $parent2)) { New-Item -ItemType Directory -Path $parent2 -Force | Out-Null }
-Copy-Item $source $dest2 -Recurse
-Write-Host "Copied engine to ZIA"
-
 # Project folder is compile-game (not compile)
 $dest3 = Join-Path $codeRoot "compile-game\noble-bg-engine\packages\engine"
 if (Test-Path $dest3) { Remove-Item $dest3 -Recurse -Force }

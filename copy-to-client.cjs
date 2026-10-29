@@ -29,7 +29,6 @@ function copyDir(src, dest) {
 // On Render/CI only the engine repo is present, so we skip and do not create sibling dirs.
 const dests = [
   ['the-golden-ages', path.join(codeRoot, 'the-golden-ages'), path.join(codeRoot, 'the-golden-ages', 'noble-bg-engine', 'packages', 'engine')],
-  ['ZIA', path.join(codeRoot, 'ZIA'), path.join(codeRoot, 'ZIA', 'noble-bg-engine', 'packages', 'engine')],
   ['compile-game', path.join(codeRoot, 'compile-game'), path.join(codeRoot, 'compile-game', 'noble-bg-engine', 'packages', 'engine')],
   ['crown-duels', path.join(codeRoot, 'crown-duels'), path.join(codeRoot, 'crown-duels', 'noble-bg-engine', 'packages', 'engine')],
 ];
