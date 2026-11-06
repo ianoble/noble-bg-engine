@@ -16,10 +16,12 @@ const db = hasDb
     })
   : undefined;
 
-const origins: (string | RegExp)[] = [Origins.LOCALHOST];
-if (process.env.FRONTEND_URL) {
-  origins.push(process.env.FRONTEND_URL);
-}
+// FRONTEND_URL: one site, or several separated by commas (one per game client).
+const frontendUrls = (process.env.FRONTEND_URL ?? '')
+  .split(',')
+  .map((url) => url.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+const origins: (string | RegExp)[] = [Origins.LOCALHOST, ...frontendUrls];
 
 async function start() {
   await loadExternalGames();
@@ -39,6 +41,7 @@ async function start() {
 
   server.run(PORT, () => {
     console.log(`[bgf] boardgame.io server listening on http://localhost:${PORT}`);
+    console.log(`[bgf] allowed sites: ${frontendUrls.join(', ') || '(localhost only)'}`);
     console.log(`[bgf] storage: ${db ? 'PostgreSQL' : 'in-memory'}`);
     console.log(`[bgf] auth: ${hasDb ? 'enabled (PostgreSQL)' : 'disabled (no DATABASE_URL)'}`);
     const ids = gameRegistry.map((d) => d.id);
