@@ -287,6 +287,26 @@ if (ziaPaths.length > 0) {
   console.log('[build-external-games] zia not found (sibling=', path.join(engineRoot, '..', 'zia'), ')');
 }
 
+// 8. Root Faction Draft: ROOT_DRAFT_PATH or sibling root-draft.
+const rootDraftPaths = [];
+const rootDraftRoots = [
+  ...(process.env.ROOT_DRAFT_PATH ? [path.resolve(process.cwd(), process.env.ROOT_DRAFT_PATH)] : []),
+  path.join(engineRoot, '..', 'root-draft'),
+];
+for (const root of rootDraftRoots) {
+  const p = path.join(root, 'src', 'logic', 'index.ts');
+  if (fs.existsSync(p)) {
+    rootDraftPaths.push({ in: p, out: path.join(gamesOutDir, 'game-root-draft.js') });
+    break;
+  }
+}
+if (rootDraftPaths.length > 0) {
+  console.log('[build-external-games] building game-root-draft.js from', rootDraftPaths[0].in);
+  for (const e of rootDraftPaths) externalEntries.push(e);
+} else {
+  console.log('[build-external-games] root-draft not found (sibling=', path.join(engineRoot, '..', 'root-draft'), ')');
+}
+
 // Only build external games to dist/games/; in-repo games are bundled into the server via the generated registry.
 const all = [...externalEntries];
 if (all.length > 0) {
