@@ -19,7 +19,16 @@ On Render, the server typically runs as `node dist/index.cjs`, so the server ent
 
 **In-repo games:** Add a single file under `packages/server/src/games/` (e.g. `my-game.ts`) that exports `gameDef` or `gameDefs`. The build script **discovers all `.ts` and `.js` files** in that directory and bundles each to `dist/games/<filename>.js`. No config list to edit — add a file, it gets built.
 
-**External games (other repos):** Set the env var `EXTERNAL_GAMES_CONFIG` to a JSON array, e.g.:
+**Game repos (zia, root-draft, ...):** Add one line to `external-games.json` at the repo root:
+```json
+{ "slug": "my-game", "repo": "https://github.com/ianoble/my-game" }
+```
+`npm run fetch:external-games -- --fresh` clones every listed repo to `../<slug>` (without `--fresh` it only clones missing ones and never touches existing folders, so local checkouts are safe). The build then bundles `../<slug>/src/logic/index.ts` (or `game-logic.ts`) as `game-<slug>.js`. Set `<SLUG>_PATH` (e.g. `ROOT_DRAFT_PATH`) to build from another folder. Render build command:
+```
+npm install --include=dev && npm run fetch:external-games -- --fresh && npm run build -w packages/engine && npm run build:with-external-games -w packages/server
+```
+
+**Other external games:** Set the env var `EXTERNAL_GAMES_CONFIG` to a JSON array, e.g.:
 ```json
 [{"slug": "my-game", "path": "/absolute/path/to/entry.ts"}]
 ```

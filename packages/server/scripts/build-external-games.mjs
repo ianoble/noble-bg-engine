@@ -252,39 +252,33 @@ if (westernLegendsPaths.length > 0) {
   console.log('[build-external-games] western-legends not found (sibling=', path.join(engineRoot, '..', 'western-legends'), ')');
 }
 
-// 7. Zia (Xia: Legends of a Drift System): ZIA_PATH or sibling zia.
-const ziaPaths = [];
-if (process.env.ZIA_PATH) {
-  const root = path.resolve(process.cwd(), process.env.ZIA_PATH);
-  for (const entry of ['index', 'game-logic']) {
-    for (const ext of ['.ts', '.js']) {
-      const p = path.join(root, 'src', 'logic', entry + ext);
-      if (fs.existsSync(p)) {
-        ziaPaths.push({ in: p, out: path.join(gamesOutDir, 'game-zia.js') });
-        break;
+// 7. Games listed in external-games.json (repo root). Each is found at <SLUG>_PATH (e.g. ZIA_PATH,
+//    ROOT_DRAFT_PATH) or at the sibling folder ../<slug>, which scripts/fetch-external-games.mjs
+//    clones. Entry: src/logic/index or src/logic/game-logic (.ts or .js).
+const manifestPath = path.join(engineRoot, 'external-games.json');
+const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : [];
+for (const { slug } of manifest) {
+  const envName = slug.toUpperCase().replace(/-/g, '_') + '_PATH';
+  const roots = [
+    ...(process.env[envName] ? [path.resolve(process.cwd(), process.env[envName])] : []),
+    path.join(engineRoot, '..', slug),
+  ];
+  let entry = null;
+  for (const root of roots) {
+    for (const name of ['index', 'game-logic']) {
+      for (const ext of ['.ts', '.js']) {
+        const p = path.join(root, 'src', 'logic', name + ext);
+        if (!entry && fs.existsSync(p)) entry = p;
       }
     }
-    if (ziaPaths.length > 0) break;
+    if (entry) break;
   }
-}
-if (ziaPaths.length === 0) {
-  const siblingZia = path.join(engineRoot, '..', 'zia');
-  for (const entry of ['index', 'game-logic']) {
-    for (const ext of ['.ts', '.js']) {
-      const p = path.join(siblingZia, 'src', 'logic', entry + ext);
-      if (fs.existsSync(p)) {
-        ziaPaths.push({ in: p, out: path.join(gamesOutDir, 'game-zia.js') });
-        break;
-      }
-    }
-    if (ziaPaths.length > 0) break;
+  if (entry) {
+    console.log(`[build-external-games] building game-${slug}.js from`, entry);
+    externalEntries.push({ in: entry, out: path.join(gamesOutDir, `game-${slug}.js`) });
+  } else {
+    console.log(`[build-external-games] ${slug} not found (set ${envName} or clone it to`, roots[roots.length - 1], ')');
   }
-}
-if (ziaPaths.length > 0) {
-  console.log('[build-external-games] building game-zia.js from', ziaPaths[0].in);
-  for (const e of ziaPaths) externalEntries.push(e);
-} else {
-  console.log('[build-external-games] zia not found (sibling=', path.join(engineRoot, '..', 'zia'), ')');
 }
 
 // Only build external games to dist/games/; in-repo games are bundled into the server via the generated registry.
