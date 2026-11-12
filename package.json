@@ -19,7 +19,8 @@
 		"build": "npm run build:engine && npm run build -w packages/server && npm run build -w packages/client",
 		"build:engine": "npm run build -w packages/engine",
 		"format": "prettier --write .",
-		"format:check": "prettier --check ."
+		"format:check": "prettier --check .",
+		"fetch:external-games": "node scripts/fetch-external-games.mjs"
 	},
 	"devDependencies": {
 		"concurrently": "^9.1.0",
